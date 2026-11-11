@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert, AutoComplete, Button, Card, Checkbox, Descriptions, InputNumber, Popover, Select, Space, Spin,
   Table, Tag, Tooltip, Typography,
@@ -14,6 +15,7 @@ import { getAdminClient, getErrorMessage } from '../../baas/adminClient';
 import { getStatus } from '../../baas/client';
 import { useAuth } from '../../auth/AuthProvider';
 import { queryClient } from '../../data/queryClient';
+import { formatNumber } from '../../i18n';
 import { useSchemaNames, useTableSummary } from '../../hooks/useSchemaNames';
 
 const { Text, Paragraph } = Typography;
@@ -85,6 +87,7 @@ async function saveResponse(res: Response, filename: string) {
 }
 
 function DuckDbPopover({ dataUrl }: { dataUrl: string }) {
+  const { t } = useTranslation();
   const token = getStatus().getTokens().accessToken;
   const snippet = [
     `CREATE SECRET gc2 (TYPE http, BEARER_TOKEN '${token}');`,
@@ -93,35 +96,37 @@ function DuckDbPopover({ dataUrl }: { dataUrl: string }) {
   return (
     <Popover
       trigger="click"
-      title="Use in DuckDB"
+      title={t('snapshots.useInDuckDb')}
       content={
         <Space direction="vertical" style={{ maxWidth: 560 }}>
           <Paragraph style={{ marginBottom: 0 }}>
             <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 12 }}>{snippet}</pre>
           </Paragraph>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            The snippet contains your current access token, which expires after about an hour —
-            create a fresh one when it does.
+            {t('snapshots.tokenWarning')}
           </Text>
           <Button
             size="small"
             icon={<CopyOutlined />}
             onClick={async () => {
               await navigator.clipboard.writeText(snippet);
-              message.success('Snippet copied');
+              message.success(t('snapshots.snippetCopied'));
             }}
           >
-            Copy snippet
+            {t('snapshots.copySnippet')}
           </Button>
         </Space>
       }
     >
-      <Button size="small">DuckDB</Button>
+      <Button size="small">
+        {/* i18n-ignore */}DuckDB
+      </Button>
     </Popover>
   );
 }
 
 export default function SnapshotsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isSuperUser = user?.superUser === true;
 
@@ -191,12 +196,12 @@ export default function SnapshotsPage() {
         srs: srs ?? undefined,
         formats: wantedFormats.length ? wantedFormats : undefined,
       });
-      message.success('Snapshot queued');
+      message.success(t('snapshots.snapshotQueued'));
       queryClient.invalidateQueries({ queryKey: ['snapshot-jobs'] });
     } catch (e) {
       const code = apiErrorCode(e);
       if (code === 'SNAPSHOT_IN_PROGRESS') {
-        message.warning('A snapshot of this relation is already pending or running.');
+        message.warning(t('snapshots.alreadyInProgress'));
       } else if (code === 'SNAPSHOT_NOT_CONFIGURED') {
         setNotConfigured(true);
       } else {
@@ -245,6 +250,7 @@ export default function SnapshotsPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
+        {/* i18n-ignore */}
         <h2>Snapshots</h2>
       </Space>
 
@@ -253,18 +259,13 @@ export default function SnapshotsPage() {
         type="info"
         showIcon
         message={
-          <>
-            A snapshot is an immutable GeoParquet copy of a table or view, stored per
-            schema/relation/date. There is at most one snapshot per relation per UTC day — rerunning
-            an export the same day replaces it. Exports run asynchronously and usually take seconds
-            to a few minutes.
-          </>
+          <>{t('snapshots.intro')}</>
         }
       />
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Select
-          placeholder="Select schema"
+          placeholder={t('snapshots.selectSchema')}
           style={{ width: 240 }}
           showSearch
           value={schema}
@@ -275,7 +276,7 @@ export default function SnapshotsPage() {
           options={schemas.map((name) => ({ label: name, value: name }))}
         />
         <AutoComplete
-          placeholder="Table, view or matview"
+          placeholder={t('snapshots.relationPlaceholder')}
           style={{ width: 280 }}
           value={relation}
           onChange={setRelation}
@@ -286,22 +287,22 @@ export default function SnapshotsPage() {
           filterOption={(input, option) => (option?.value ?? '').toLowerCase().includes(input.toLowerCase())}
         />
         {relation && !relationValid && (
-          <Text type="danger">Only names matching A-Z, 0-9, _ and - can be snapshotted.</Text>
+          <Text type="danger">{t('snapshots.invalidRelation')}</Text>
         )}
       </Space>
 
       {isSuperUser && (
         <Card
-          title="Create snapshot"
+          title={t('snapshots.createSnapshot')}
           size="small"
           style={{ marginBottom: 16 }}
-          extra={<Text type="secondary">Super-user only</Text>}
+          extra={<Text type="secondary">{t('snapshots.superUserOnly')}</Text>}
         >
           {notConfigured ? (
             <Alert
               type="warning"
               showIcon
-              message="Snapshots are not configured on this server (no snapshot storage). Ask the operator to configure it."
+              message={t('snapshots.notConfigured')}
             />
           ) : (
             <Space wrap>
@@ -311,7 +312,7 @@ export default function SnapshotsPage() {
                 onChange={(v) => setWantedFormats(v as string[])}
               />
               <InputNumber
-                placeholder="Target SRS (EPSG), optional"
+                placeholder={t('snapshots.targetSrs')}
                 style={{ width: 220 }}
                 min={1}
                 value={srs}
@@ -324,9 +325,9 @@ export default function SnapshotsPage() {
                 loading={creating}
                 onClick={handleCreate}
               >
-                Create snapshot
+                {t('snapshots.createSnapshot')}
               </Button>
-              <Text type="secondary">Leave SRS empty to keep the native SRID.</Text>
+              <Text type="secondary">{t('snapshots.leaveSrsEmpty')}</Text>
             </Space>
           )}
         </Card>
@@ -334,12 +335,12 @@ export default function SnapshotsPage() {
 
       {isSuperUser && (
         <Card
-          title="Jobs"
+          title={t('snapshots.jobs')}
           size="small"
           style={{ marginBottom: 16 }}
           extra={
             <Button size="small" icon={<ReloadOutlined />} onClick={() => jobsQuery.refetch()}>
-              Refresh
+              {t('common.refresh')}
             </Button>
           }
         >
@@ -350,10 +351,15 @@ export default function SnapshotsPage() {
             pagination={false}
             loading={jobsQuery.isLoading}
             columns={[
-              { title: 'Relation', key: 'relation',
-                render: (_: unknown, j: SnapshotJob) => <Text code>{`${j.schema}.${j.relation}`}</Text>,
+              { title: t('snapshots.colRelation'), key: 'relation',
+                render: (_: unknown, j: SnapshotJob) => (
+                  <Text code>
+                    {/* i18n-ignore */}
+                    {`${j.schema}.${j.relation}`}
+                  </Text>
+                ),
               },
-              { title: 'Status', dataIndex: 'status', key: 'status',
+              { title: t('common.status'), dataIndex: 'status', key: 'status',
                 render: (s: SnapshotStatus, j: SnapshotJob) =>
                   j.error ? (
                     <Tooltip title={j.error}>
@@ -363,34 +369,40 @@ export default function SnapshotsPage() {
                     <Tag color={STATUS_COLOR[s]}>{s}</Tag>
                   ),
               },
-              { title: 'Rows', dataIndex: 'row_count', key: 'rows',
-                render: (v: number | null) => v?.toLocaleString() ?? '—',
+              { title: t('snapshots.colRows'), dataIndex: 'row_count', key: 'rows',
+                render: (v: number | null) => (v === null || v === undefined ? '—' : formatNumber(v)),
               },
-              { title: 'SRS', dataIndex: 'srs', key: 'srs', render: (v: number | null) => v ?? 'native' },
-              { title: 'Formats', key: 'formats',
+              {
+                // i18n-ignore
+                title: 'SRS',
+                dataIndex: 'srs',
+                key: 'srs',
+                render: (v: number | null) => v ?? t('snapshots.native'),
+              },
+              { title: t('snapshots.colFormats'), key: 'formats',
                 render: (_: unknown, j: SnapshotJob) => <FormatBadges formats={j.formats} />,
               },
-              { title: 'Created', dataIndex: 'created', key: 'created' },
-              { title: 'Finished', dataIndex: 'finished', key: 'finished', render: (v: string | null) => v ?? '—' },
-              { title: 'By', dataIndex: 'username', key: 'username' },
+              { title: t('snapshots.colCreated'), dataIndex: 'created', key: 'created' },
+              { title: t('snapshots.colFinished'), dataIndex: 'finished', key: 'finished', render: (v: string | null) => v ?? '—' },
+              { title: t('snapshots.colBy'), dataIndex: 'username', key: 'username' },
             ]}
           />
         </Card>
       )}
 
       <Card
-        title="Published snapshots"
+        title={t('snapshots.published')}
         size="small"
         extra={
           relationChosen && latestFormats.length > 0 ? (
             <Space size={4}>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                Latest URL:
+                {t('snapshots.latestUrl')}
               </Text>
               {latestFormats.map((f) => (
                 <Tooltip
                   key={f}
-                  title={`Copy a stable URL that always resolves to the newest published ${f} snapshot — paste it into DuckDB or QGIS.`}
+                  title={t('snapshots.latestUrlTip', { format: f })}
                 >
                   <Button
                     size="small"
@@ -399,7 +411,7 @@ export default function SnapshotsPage() {
                       await navigator.clipboard.writeText(
                         snapshotsClient().getRelationSnapshotDataFormatUrl(schema!, relation, 'latest', f),
                       );
-                      message.success('Latest URL copied');
+                      message.success(t('snapshots.latestUrlCopied'));
                     }}
                   >
                     {f}
@@ -411,7 +423,7 @@ export default function SnapshotsPage() {
         }
       >
         {!relationChosen ? (
-          <Text type="secondary">Select a schema and relation to list its snapshots.</Text>
+          <Text type="secondary">{t('snapshots.selectRelation')}</Text>
         ) : snapsQuery.isLoading ? (
           <Spin />
         ) : snapsQuery.error ? (
@@ -422,7 +434,7 @@ export default function SnapshotsPage() {
             rowKey="snapshot_date"
             size="small"
             pagination={false}
-            locale={{ emptyText: 'No snapshots for this relation yet.' }}
+            locale={{ emptyText: t('snapshots.noSnapshots') }}
             expandable={{
               expandedRowRender: (snap: RelationSnapshot) => (
                 <SnapshotDetails
@@ -434,26 +446,26 @@ export default function SnapshotsPage() {
               ),
             }}
             columns={[
-              { title: 'Date', dataIndex: 'snapshot_date', key: 'date' },
-              { title: 'Rows', dataIndex: 'row_count', key: 'rows', render: (v: number) => v.toLocaleString() },
-              { title: 'Size', dataIndex: 'size_bytes', key: 'size', render: (v: number) => humanBytes(v) },
-              { title: 'Schema', dataIndex: 'schema_version', key: 'sv',
+              { title: t('snapshots.colDate'), dataIndex: 'snapshot_date', key: 'date' },
+              { title: t('snapshots.colRows'), dataIndex: 'row_count', key: 'rows', render: (v: number) => formatNumber(v) },
+              { title: t('snapshots.colSize'), dataIndex: 'size_bytes', key: 'size', render: (v: number) => humanBytes(v) },
+              { title: t('snapshots.colSchema'), dataIndex: 'schema_version', key: 'sv',
                 render: (v: string, snap: RelationSnapshot) => (
                   <Space size={6}>
                     <Text code style={{ fontSize: 12 }}>{v.slice(0, 8)}</Text>
                     {schemaChanged.has(snap.snapshot_date) && (
-                      <Tooltip title="The relation's columns changed since the previous snapshot.">
-                        <Tag color="orange" style={{ margin: 0 }}>schema changed</Tag>
+                      <Tooltip title={t('snapshots.schemaChangedTip')}>
+                        <Tag color="orange" style={{ margin: 0 }}>{t('snapshots.schemaChanged')}</Tag>
                       </Tooltip>
                     )}
                   </Space>
                 ),
               },
-              { title: 'Formats', key: 'formats',
+              { title: t('snapshots.colFormats'), key: 'formats',
                 render: (_: unknown, snap: RelationSnapshot) => <FormatBadges formats={snap.formats} />,
               },
-              { title: 'Published', dataIndex: 'published', key: 'published' },
-              { title: 'Actions', key: 'actions', width: 280,
+              { title: t('snapshots.colPublished'), dataIndex: 'published', key: 'published' },
+              { title: t('common.actions'), key: 'actions', width: 280,
                 render: (_: unknown, snap: RelationSnapshot) => {
                   // Older snapshots carry no formats array — treat them as Parquet-only.
                   const produced = producedFormats(snap);
@@ -467,7 +479,7 @@ export default function SnapshotsPage() {
                   return (
                     <Space>
                       {effective.map((f) => (
-                        <Tooltip key={f.format} title={`Download ${f.format}`}>
+                        <Tooltip key={f.format} title={t('snapshots.downloadFormat', { format: f.format })}>
                           <Button
                             size="small"
                             icon={<DownloadOutlined />}
@@ -477,13 +489,13 @@ export default function SnapshotsPage() {
                           </Button>
                         </Tooltip>
                       ))}
-                      <Tooltip title={`Copy ${linkFormat} URL`}>
+                      <Tooltip title={t('snapshots.copyFormatUrl', { format: linkFormat })}>
                         <Button
                           size="small"
                           icon={<LinkOutlined />}
                           onClick={async () => {
                             await navigator.clipboard.writeText(urlOf(linkFormat));
-                            message.success('URL copied');
+                            message.success(t('snapshots.urlCopied'));
                           }}
                         />
                       </Tooltip>
@@ -512,6 +524,7 @@ function SnapshotDetails({
   snap: RelationSnapshot;
   onDownloadFile: (name: string) => void;
 }) {
+  const { t } = useTranslation();
   const { data, isLoading, error } = useQuery({
     queryKey: ['relation-snapshot', schema, relation, snap.snapshot_date],
     queryFn: async () => await snapshotsClient().getRelationSnapshot(schema, relation, snap.snapshot_date),
@@ -525,9 +538,15 @@ function SnapshotDetails({
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       <Descriptions size="small" column={3}>
-        <Descriptions.Item label="SRS">{data.srs ?? 'native'}</Descriptions.Item>
-        <Descriptions.Item label="CRS">{data.crs ?? '—'}</Descriptions.Item>
-        <Descriptions.Item label="Snapshot id">
+        <Descriptions.Item
+          // i18n-ignore
+          label="SRS"
+        >{data.srs ?? t('snapshots.native')}</Descriptions.Item>
+        <Descriptions.Item
+          // i18n-ignore
+          label="CRS"
+        >{data.crs ?? '—'}</Descriptions.Item>
+        <Descriptions.Item label={t('snapshots.snapshotId')}>
           <Text code style={{ fontSize: 12 }}>{data.snapshot_id}</Text>
         </Descriptions.Item>
       </Descriptions>
@@ -538,8 +557,8 @@ function SnapshotDetails({
           size="small"
           pagination={false}
           columns={[
-            { title: 'Column', dataIndex: 'column_name', key: 'c' },
-            { title: 'Type', dataIndex: 'data_type', key: 't' },
+            { title: t('snapshots.colColumn'), dataIndex: 'column_name', key: 'c' },
+            { title: t('common.type'), dataIndex: 'data_type', key: 't' },
           ]}
         />
       )}

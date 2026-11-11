@@ -1,5 +1,6 @@
 // src/features/realtime/SubscriptionForm.tsx
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Select, List, Space, Form, Tag } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useSchemaNames, useTableSummary } from '../../hooks/useSchemaNames';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function SubscriptionForm({ subscriptions, onSubscribe, onRemove }: Props) {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [schema, setSchema] = useState<string | undefined>();
 
@@ -21,7 +23,7 @@ export default function SubscriptionForm({ subscriptions, onSubscribe, onRemove 
 
   const { data: summary } = useTableSummary(schema);
   // Only show tables with events enabled (views can't have events).
-  const tables: string[] = eventStatuses(summary).filter((t) => t.enabled).map((t) => t.table);
+  const tables: string[] = eventStatuses(summary).filter((s) => s.enabled).map((s) => s.table);
 
   const handleSubmit = (values: any) => {
     const sub: SubscriptionRequest = {
@@ -39,12 +41,20 @@ export default function SubscriptionForm({ subscriptions, onSubscribe, onRemove 
   return (
     <div>
       <Form form={form} layout="vertical" size="small" onFinish={handleSubmit}>
-        <Form.Item name="id" label="ID" rules={[{ required: true, message: 'Required' }]}>
-          <Input placeholder="my-subscription" />
+        <Form.Item
+          name="id"
+          // i18n-ignore
+          label="ID"
+          rules={[{ required: true, message: t('realtime.required') }]}
+        >
+          <Input
+            // i18n-ignore
+            placeholder="my-subscription"
+          />
         </Form.Item>
-        <Form.Item name="schema" label="Schema" rules={[{ required: true }]}>
+        <Form.Item name="schema" label={t('realtime.schema')} rules={[{ required: true }]}>
           <Select
-            placeholder="Schema"
+            placeholder={t('realtime.schema')}
             options={schemas?.map((s) => ({ label: s, value: s }))}
             onChange={(v) => {
               setSchema(v);
@@ -52,29 +62,38 @@ export default function SubscriptionForm({ subscriptions, onSubscribe, onRemove 
             }}
           />
         </Form.Item>
-        <Form.Item name="rel" label="Table" rules={[{ required: true }]}>
+        <Form.Item name="rel" label={t('realtime.table')} rules={[{ required: true }]}>
           <Select
-            placeholder="Table"
-            options={tables?.map((t) => ({ label: t, value: t }))}
+            placeholder={t('realtime.table')}
+            options={tables?.map((n) => ({ label: n, value: n }))}
             disabled={!schema}
           />
         </Form.Item>
-        <Form.Item name="op" label="Operation">
+        <Form.Item name="op" label={t('realtime.operation')}>
           <Select
-            placeholder="All"
+            placeholder={t('realtime.all')}
             allowClear
             options={[
+              // i18n-ignore
               { label: 'INSERT', value: 'INSERT' },
+              // i18n-ignore
               { label: 'UPDATE', value: 'UPDATE' },
+              // i18n-ignore
               { label: 'DELETE', value: 'DELETE' },
             ]}
           />
         </Form.Item>
-        <Form.Item name="where" label="Where">
-          <Input placeholder="status = 'active'" />
+        <Form.Item name="where" label={t('realtime.where')}>
+          <Input
+            // i18n-ignore
+            placeholder="status = 'active'"
+          />
         </Form.Item>
-        <Form.Item name="columns" label="Columns">
-          <Input placeholder="id,name,email" />
+        <Form.Item name="columns" label={t('realtime.columns')}>
+          <Input
+            // i18n-ignore
+            placeholder="id,name,email"
+          />
         </Form.Item>
         <Form.Item>
           <Button
@@ -83,7 +102,7 @@ export default function SubscriptionForm({ subscriptions, onSubscribe, onRemove 
             icon={<PlusOutlined />}
             block
           >
-            Subscribe
+            {t('realtime.subscribe')}
           </Button>
         </Form.Item>
       </Form>
@@ -91,7 +110,7 @@ export default function SubscriptionForm({ subscriptions, onSubscribe, onRemove 
       {subscriptions.length > 0 && (
         <List
           size="small"
-          header={<strong style={{ fontSize: 12 }}>Active Subscriptions</strong>}
+          header={<strong style={{ fontSize: 12 }}>{t('realtime.activeSubscriptions')}</strong>}
           dataSource={subscriptions}
           renderItem={(sub) => (
             <List.Item

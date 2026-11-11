@@ -1,4 +1,5 @@
 // src/features/realtime/RealtimePage.tsx
+import { useTranslation } from 'react-i18next';
 import { Button, Alert, Collapse, Space, theme } from 'antd';
 import {
   ThunderboltOutlined,
@@ -19,6 +20,7 @@ import {
 } from './realtimeStore';
 
 export default function RealtimePage() {
+  const { t } = useTranslation();
   const { token: themeToken } = theme.useToken();
   const { connected, error, events, subscriptions } = useRealtimeStore();
 
@@ -27,7 +29,7 @@ export default function RealtimePage() {
       <Space style={{ marginBottom: 12 }}>
         <h2 style={{ margin: 0 }}>
           <ThunderboltOutlined style={{ marginRight: 8 }} />
-          Realtime
+          {/* i18n-ignore */}Realtime
         </h2>
         <Button
           type={connected ? 'default' : 'primary'}
@@ -35,11 +37,11 @@ export default function RealtimePage() {
           icon={connected ? <DisconnectOutlined /> : <LinkOutlined />}
           onClick={connected ? disconnect : connect}
         >
-          {connected ? 'Disconnect' : 'Connect'}
+          {connected ? t('realtime.disconnect') : t('realtime.connect')}
         </Button>
         {connected && (
           <span style={{ color: '#52c41a', fontSize: 12 }}>
-            ● Connected
+            {t('realtime.connected')}
           </span>
         )}
       </Space>
@@ -79,12 +81,12 @@ export default function RealtimePage() {
             items={[
               {
                 key: 'events',
-                label: 'Enable Events',
+                label: t('realtime.enableEvents'),
                 children: <EnableEvents />,
               },
               {
                 key: 'subscriptions',
-                label: 'Subscriptions',
+                label: t('realtime.subscriptions'),
                 children: (
                   <SubscriptionForm
                     subscriptions={subscriptions}

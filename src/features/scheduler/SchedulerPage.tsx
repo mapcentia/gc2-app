@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert, Button, Descriptions, Drawer, Input, Select, Space, Table, Tabs, Tag, Tooltip, Typography,
 } from 'antd';
@@ -33,6 +34,7 @@ const RUN_STATUS_COLOR: Record<SchedulerRunStatus, string> = {
 const RUN_STATUSES: SchedulerRunStatus[] = ['running', 'succeeded', 'failed', 'skipped', 'lost'];
 
 export default function SchedulerPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isSuperUser = user?.superUser === true;
 
@@ -97,7 +99,7 @@ export default function SchedulerPage() {
   const runLog = runDetailQuery.data?.log ?? null;
 
   if (!isSuperUser) {
-    return <Alert type="info" showIcon message="The scheduler is available to the database super-user only." />;
+    return <Alert type="info" showIcon message={t('scheduler.superUserOnly')} />;
   }
 
   const refreshAll = () => {
@@ -110,17 +112,17 @@ export default function SchedulerPage() {
     try {
       if (editJob) {
         await schedulerClient().patchSchedulerJob(editJob.id, values);
-        message.success('Job updated');
+        message.success(t('scheduler.jobUpdated'));
       } else {
         await schedulerClient().postSchedulerJob(values);
-        message.success('Job created');
+        message.success(t('scheduler.jobCreated'));
       }
       setFormOpen(false);
       setEditJob(null);
       queryClient.invalidateQueries({ queryKey: ['scheduler-jobs'] });
     } catch (e) {
       if (getApiErrorCode(e) === 'INVALID_CRON_FIELD') {
-        message.error(`Invalid cron expression: ${getErrorMessage(e)}`);
+        message.error(t('scheduler.invalidCron', { message: getErrorMessage(e) }));
       } else {
         message.error(getErrorMessage(e));
       }
@@ -134,12 +136,12 @@ export default function SchedulerPage() {
     confirmDelete(names, async () => {
       try {
         await schedulerClient().deleteSchedulerJob(ids.length === 1 ? ids[0] : ids);
-        message.success(ids.length === 1 ? 'Job deleted' : `${ids.length} jobs deleted`);
+        message.success(t('scheduler.jobsDeleted', { count: ids.length }));
         setSelectedJobIds([]);
         queryClient.invalidateQueries({ queryKey: ['scheduler-jobs'] });
       } catch (e) {
         if (getApiErrorCode(e) === 'JOB_RUNNING') {
-          message.warning('A selected job has a run in progress — nothing was deleted.');
+          message.warning(t('scheduler.jobRunningDelete'));
         } else {
           message.error(getErrorMessage(e));
         }
@@ -150,12 +152,12 @@ export default function SchedulerPage() {
   const handleRunNow = async (job: SchedulerJob) => {
     try {
       await schedulerClient().postSchedulerRun({ job: job.id });
-      message.success(`Started "${job.name}"`);
+      message.success(t('scheduler.started', { name: job.name }));
       setPollUntil(Date.now() + 30_000);
       queryClient.invalidateQueries({ queryKey: ['scheduler-runs'] });
     } catch (e) {
       if (getApiErrorCode(e) === 'JOB_RUNNING') {
-        message.warning('This job already has a run in progress.');
+        message.warning(t('scheduler.jobAlreadyRunning'));
       } else {
         message.error(getErrorMessage(e));
       }
@@ -163,11 +165,11 @@ export default function SchedulerPage() {
   };
 
   const handleStop = (run: SchedulerRun) => {
-    confirmDelete(`run ${run.uuid.slice(0, 8)} (SIGINT, then SIGKILL — may take up to 30 s)`, async () => {
+    confirmDelete(t('scheduler.stopTarget', { id: run.uuid.slice(0, 8) }), async () => {
       setStopping(run.uuid);
       try {
         const res = await schedulerClient().deleteSchedulerRun(run.uuid);
-        message.success(`Run stopped (${res.signal})`);
+        message.success(t('scheduler.runStopped', { signal: res.signal }));
       } catch (e) {
         message.error(getErrorMessage(e));
       } finally {
@@ -180,6 +182,7 @@ export default function SchedulerPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
+        {/* i18n-ignore */}
         <h2>Scheduler</h2>
       </Space>
 
@@ -187,24 +190,24 @@ export default function SchedulerPage() {
         style={{ marginBottom: 16 }}
         type="info"
         showIcon
-        message="Scheduler jobs import a file or service into a schema on a cron schedule (via ogr2ogr). A job can optionally queue a Parquet snapshot after each successful import."
+        message={t('scheduler.intro')}
       />
 
       <Tabs
         defaultActiveKey="jobs"
         tabBarExtraContent={
           <Button size="small" icon={<ReloadOutlined />} onClick={refreshAll}>
-            Refresh
+            {t('common.refresh')}
           </Button>
         }
         items={[
           { key: 'jobs',
-            label: `Jobs (${jobs.length})`,
+            label: t('scheduler.jobsTab', { count: jobs.length }),
             children: (
               <>
                 <Space style={{ marginBottom: 12, justifyContent: 'space-between', width: '100%' }}>
                   <Input.Search
-                    placeholder="Search name, schema or URL..."
+                    placeholder={t('scheduler.searchPlaceholder')}
                     allowClear
                     onChange={(e) => setJobSearch(e.target.value)}
                     style={{ width: 320 }}
@@ -212,7 +215,7 @@ export default function SchedulerPage() {
                   <Space>
                     {selectedJobIds.length > 0 && (
                       <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(selectedJobIds)}>
-                        Delete selected ({selectedJobIds.length})
+                        {t('scheduler.deleteSelected', { count: selectedJobIds.length })}
                       </Button>
                     )}
                     <Button
@@ -223,7 +226,7 @@ export default function SchedulerPage() {
                         setFormOpen(true);
                       }}
                     >
-                      New job
+                      {t('scheduler.newJob')}
                     </Button>
                   </Space>
                 </Space>
@@ -241,65 +244,65 @@ export default function SchedulerPage() {
             rowExpandable: (j: SchedulerJob) => j.report !== null,
             expandedRowRender: (j: SchedulerJob) => (
               <>
-                <Text strong>Last report</Text>
+                <Text strong>{t('scheduler.lastReport')}</Text>
                 <pre style={{ fontSize: 12, maxHeight: 320, overflow: 'auto', margin: 0 }}>
                   {JSON.stringify(j.report, null, 2)}
                 </pre>
               </>
             ),
           }}
-          locale={{ emptyText: 'No scheduler jobs yet.' }}
+          locale={{ emptyText: t('scheduler.noJobs') }}
           columns={[
-            { title: 'Id', dataIndex: 'id', key: 'id', width: 80,
+            { title: t('scheduler.colId'), dataIndex: 'id', key: 'id', width: 80,
               sorter: (a: SchedulerJob, b: SchedulerJob) => a.id - b.id,
             },
-            { title: 'Name', dataIndex: 'name', key: 'name',
+            { title: t('common.name'), dataIndex: 'name', key: 'name',
               sorter: (a: SchedulerJob, b: SchedulerJob) => (a.name ?? '').localeCompare(b.name ?? ''),
             },
-            { title: 'Schema', dataIndex: 'schema', key: 'schema',
+            { title: t('scheduler.colSchema'), dataIndex: 'schema', key: 'schema',
               sorter: (a: SchedulerJob, b: SchedulerJob) => (a.schema ?? '').localeCompare(b.schema ?? ''),
             },
-            { title: 'URL', dataIndex: 'url', key: 'url', ellipsis: true,
+            { title: t('scheduler.colUrl'), dataIndex: 'url', key: 'url', ellipsis: true,
               sorter: (a: SchedulerJob, b: SchedulerJob) => (a.url ?? '').localeCompare(b.url ?? ''),
               render: (v: string) => <Tooltip title={v}>{v}</Tooltip>,
             },
-            { title: 'Schedule', dataIndex: 'schedule', key: 'schedule',
+            { title: t('scheduler.schedule'), dataIndex: 'schedule', key: 'schedule',
               sorter: (a: SchedulerJob, b: SchedulerJob) => (a.schedule ?? '').localeCompare(b.schedule ?? ''),
               render: (v: string) => <Text code>{v}</Text>,
             },
-            { title: 'Active', dataIndex: 'active', key: 'active',
+            { title: t('scheduler.active'), dataIndex: 'active', key: 'active',
               sorter: (a: SchedulerJob, b: SchedulerJob) => Number(a.active) - Number(b.active),
-              render: (v: boolean) => (v ? <Tag color="green">active</Tag> : <Tag>inactive</Tag>),
+              render: (v: boolean) => (v ? <Tag color="green">{t('scheduler.activeTag')}</Tag> : <Tag>{t('scheduler.inactiveTag')}</Tag>),
             },
-            { title: 'Snapshot', dataIndex: 'snapshot', key: 'snapshot',
+            { title: t('scheduler.snapshot'), dataIndex: 'snapshot', key: 'snapshot',
               sorter: (a: SchedulerJob, b: SchedulerJob) => Number(a.snapshot) - Number(b.snapshot),
               render: (v: boolean, j: SchedulerJob) =>
                 v ? (
-                  <Tooltip title={`Formats: ${j.snapshot_formats?.join(', ') ?? 'server default'}`}>
-                    <Tag color="blue">{j.snapshot_formats?.join('+') ?? 'yes'}</Tag>
+                  <Tooltip title={t('scheduler.formatsTip', { formats: j.snapshot_formats?.join(', ') ?? t('scheduler.serverDefault') })}>
+                    <Tag color="blue">{j.snapshot_formats?.join('+') ?? t('scheduler.yesLower')}</Tag>
                   </Tooltip>
                 ) : null,
             },
-            { title: 'Last run', key: 'lastrun',
+            { title: t('scheduler.lastRun'), key: 'lastrun',
               // ok/failed first by status, then newest run; never-run rows sort last.
               sorter: (a: SchedulerJob, b: SchedulerJob) =>
                 (a.lastrun ?? '').localeCompare(b.lastrun ?? ''),
               render: (_: unknown, j: SchedulerJob) =>
                 j.lastcheck === null ? (
-                  <Text type="secondary">never</Text>
+                  <Text type="secondary">{t('scheduler.never')}</Text>
                 ) : (
                   <Space size={6}>
                     <Tag color={j.lastcheck ? 'success' : 'error'} style={{ margin: 0 }}>
-                      {j.lastcheck ? 'ok' : 'failed'}
+                      {j.lastcheck ? t('scheduler.okLower') : t('scheduler.failedLower')}
                     </Tag>
                     <Text type="secondary" style={{ fontSize: 12 }}>{j.lastrun ?? ''}</Text>
                   </Space>
                 ),
             },
-            { title: 'Actions', key: 'actions', width: 140,
+            { title: t('common.actions'), key: 'actions', width: 140,
               render: (_: unknown, j: SchedulerJob) => (
                 <Space>
-                  <Tooltip title="Run now">
+                  <Tooltip title={t('scheduler.runNow')}>
                     <Button size="small" icon={<CaretRightOutlined />} onClick={() => handleRunNow(j)} />
                   </Tooltip>
                   <Button
@@ -322,15 +325,15 @@ export default function SchedulerPage() {
           { key: 'runs',
             label: (
               <Space size={6}>
-                Runs
-                {anyRunning && <Tag color="processing" style={{ margin: 0 }}>live</Tag>}
+                {t('scheduler.runsTab')}
+                {anyRunning && <Tag color="processing" style={{ margin: 0 }}>{t('scheduler.live')}</Tag>}
               </Space>
             ),
             children: (
               <>
                 <Space style={{ marginBottom: 12 }}>
             <Select
-              placeholder="All jobs"
+              placeholder={t('scheduler.allJobs')}
               style={{ width: 240 }}
               size="small"
               allowClear
@@ -339,7 +342,7 @@ export default function SchedulerPage() {
               options={jobs.map((j) => ({ label: j.name, value: j.id }))}
             />
             <Select
-              placeholder="All statuses"
+              placeholder={t('scheduler.allStatuses')}
               style={{ width: 140 }}
               size="small"
               allowClear
@@ -354,38 +357,38 @@ export default function SchedulerPage() {
           size="small"
           pagination={{ pageSize: 25 }}
           loading={runsQuery.isLoading}
-          locale={{ emptyText: 'No runs.' }}
+          locale={{ emptyText: t('scheduler.noRuns') }}
           columns={[
-            { title: 'Job', key: 'job',
+            { title: t('scheduler.colJob'), key: 'job',
               render: (_: unknown, r: SchedulerRun) => jobById.get(r.job)?.name ?? `#${r.job}`,
             },
-            { title: 'Status', key: 'status',
+            { title: t('common.status'), key: 'status',
               render: (_: unknown, r: SchedulerRun) => (
                 <Space size={4}>
                   <Tag color={RUN_STATUS_COLOR[r.status]} style={{ margin: 0 }}>{r.status}</Tag>
                   {r.stale && (
-                    <Tooltip title="Running, but no progress signal for 5 minutes.">
-                      <Tag color="orange" style={{ margin: 0 }}>stale</Tag>
+                    <Tooltip title={t('scheduler.staleTip')}>
+                      <Tag color="orange" style={{ margin: 0 }}>{t('scheduler.staleTag')}</Tag>
                     </Tooltip>
                   )}
                 </Space>
               ),
             },
-            { title: 'Started', dataIndex: 'started_at', key: 'started' },
-            { title: 'Finished', dataIndex: 'finished_at', key: 'finished',
+            { title: t('scheduler.colStarted'), dataIndex: 'started_at', key: 'started' },
+            { title: t('scheduler.colFinished'), dataIndex: 'finished_at', key: 'finished',
               render: (v: string | null) => v ?? '—',
             },
-            { title: 'Started by', dataIndex: 'name', key: 'by',
+            { title: t('scheduler.startedBy'), dataIndex: 'name', key: 'by',
               render: (v: string | null) => v ?? '—',
             },
-            { title: 'Actions', key: 'actions', width: 120,
+            { title: t('common.actions'), key: 'actions', width: 120,
               render: (_: unknown, r: SchedulerRun) => (
                 <Space>
                   <Button size="small" onClick={() => setDetailRun(r)}>
-                    Details
+                    {t('scheduler.details')}
                   </Button>
                   {r.status === 'running' && (
-                    <Tooltip title="Stop run">
+                    <Tooltip title={t('scheduler.stopRun')}>
                       <Button
                         size="small"
                         danger
@@ -420,7 +423,7 @@ export default function SchedulerPage() {
       />
 
       <Drawer
-        title={detailRun ? `Run ${detailRun.uuid.slice(0, 8)}` : ''}
+        title={detailRun ? t('scheduler.runTitle', { id: detailRun.uuid.slice(0, 8) }) : ''}
         open={detailRun !== null}
         onClose={() => setDetailRun(null)}
         width={560}
@@ -428,22 +431,28 @@ export default function SchedulerPage() {
         {shownRun && (
           <Space direction="vertical" style={{ width: '100%' }}>
             <Descriptions size="small" column={2}>
-              <Descriptions.Item label="Job">{jobById.get(shownRun.job)?.name ?? `#${shownRun.job}`}</Descriptions.Item>
-              <Descriptions.Item label="Status">
+              <Descriptions.Item label={t('scheduler.colJob')}>
+                {/* i18n-ignore */}
+                {jobById.get(shownRun.job)?.name ?? `#${shownRun.job}`}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('common.status')}>
                 <Tag color={RUN_STATUS_COLOR[shownRun.status]}>{shownRun.status}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Started">{shownRun.started_at}</Descriptions.Item>
-              <Descriptions.Item label="Finished">{shownRun.finished_at ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Heartbeat">{shownRun.heartbeat ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Host / pid">{`${shownRun.host ?? '—'} / ${shownRun.pid}`}</Descriptions.Item>
-              <Descriptions.Item label="Started by" span={2}>{shownRun.name ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('scheduler.colStarted')}>{shownRun.started_at}</Descriptions.Item>
+              <Descriptions.Item label={t('scheduler.colFinished')}>{shownRun.finished_at ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('scheduler.heartbeat')}>{shownRun.heartbeat ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('scheduler.hostPid')}>
+                {/* i18n-ignore */}
+                {`${shownRun.host ?? '—'} / ${shownRun.pid}`}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('scheduler.startedBy')} span={2}>{shownRun.name ?? '—'}</Descriptions.Item>
             </Descriptions>
             {shownRun.exit_reason && (
               <Alert type={shownRun.status === 'failed' ? 'error' : 'info'} showIcon message={shownRun.exit_reason} />
             )}
             {runLog !== null && (
               <>
-                <Text strong>Log</Text>
+                <Text strong>{t('scheduler.log')}</Text>
                 <pre style={{ fontSize: 12, maxHeight: 360, overflow: 'auto', margin: 0, whiteSpace: 'pre-wrap' }}>
                   {runLog}
                 </pre>

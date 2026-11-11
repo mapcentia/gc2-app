@@ -1,5 +1,6 @@
 // src/features/realtime/EnableEvents.tsx
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Select, Switch, List, Spin, App } from 'antd';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSchemaNames, useTableSummary, tableSummaryKey } from '../../hooks/useSchemaNames';
@@ -7,6 +8,7 @@ import { eventStatuses, setEventsEnabled } from './eventsApi';
 import { optimisticUpdate, rollback } from '../../data/optimistic';
 
 export default function EnableEvents() {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [schema, setSchema] = useState<string | undefined>();
@@ -27,7 +29,7 @@ export default function EnableEvents() {
       queryClient.invalidateQueries({ queryKey });
     } catch (e: any) {
       rollback(ctx);
-      message.error(e.message ?? 'Failed to toggle events');
+      message.error(e.message ?? t('realtime.failedToggleEvents'));
     } finally {
       setTogglingTable(null);
     }
@@ -36,7 +38,7 @@ export default function EnableEvents() {
   return (
     <div>
       <Select
-        placeholder="Select schema"
+        placeholder={t('realtime.selectSchema')}
         value={schema}
         onChange={setSchema}
         options={schemas?.map((s) => ({ label: s, value: s }))}

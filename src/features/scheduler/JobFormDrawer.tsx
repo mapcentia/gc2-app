@@ -1,6 +1,8 @@
 import { Button, Checkbox, Drawer, Form, Input, InputNumber, Select, Space, Switch, Typography } from 'antd';
 import type { SchedulerJob, SchedulerJobInput, SnapshotFormat } from '@mapcentia/gc2-sdk';
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 
 const { Text } = Typography;
 
@@ -11,10 +13,10 @@ const GEOMETRY_TYPES = [
 const SNAPSHOT_FORMATS: SnapshotFormat[] = ['parquet', 'flatgeobuf'];
 
 const CRON_PRESETS: { label: string; value: string }[] = [
-  { label: 'Every hour', value: '0 * * * *' },
-  { label: 'Daily at 02:00', value: '0 2 * * *' },
-  { label: 'Weekly (Mon 03:00)', value: '0 3 * * 1' },
-  { label: 'Monthly (1st 04:00)', value: '0 4 1 * *' },
+  { label: i18n.t('scheduler.presetHourly'), value: '0 * * * *' },
+  { label: i18n.t('scheduler.presetDaily'), value: '0 2 * * *' },
+  { label: i18n.t('scheduler.presetWeekly'), value: '0 3 * * 1' },
+  { label: i18n.t('scheduler.presetMonthly'), value: '0 4 1 * *' },
 ];
 
 /** 5 whitespace-separated cron fields; the server does the real validation. */
@@ -58,6 +60,7 @@ export default function JobFormDrawer({
   onSave: (values: SchedulerJobInput) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [preset, setPreset] = useState<string | undefined>();
   const nameValue = Form.useWatch('name', form) as string | undefined;
@@ -75,7 +78,7 @@ export default function JobFormDrawer({
 
   return (
     <Drawer
-      title={job ? `Edit job: ${job.name}` : 'Create job'}
+      title={job ? t('scheduler.editJobTitle', { name: job.name }) : t('scheduler.createJobTitle')}
       open={open}
       onClose={onClose}
       width={560}
@@ -91,7 +94,7 @@ export default function JobFormDrawer({
             onSave(values);
           }}
         >
-          Save
+          {t('common.save')}
         </Button>
       }
     >
@@ -111,31 +114,38 @@ export default function JobFormDrawer({
       >
         <Form.Item
           name="name"
-          label="Name"
+          label={t('common.name')}
           rules={[{ required: true }]}
           extra={
             nameValue && normalizeJobName(nameValue) !== nameValue ? (
-              <>Will be stored as <Text code>{normalizeJobName(nameValue)}</Text> (the import table is named after the job).</>
+              <Trans
+                i18nKey="scheduler.nameNormalized"
+                values={{ name: normalizeJobName(nameValue) }}
+                components={{ code: <Text code /> }}
+              />
             ) : undefined
           }
         >
           <Input />
         </Form.Item>
-        <Form.Item name="schema" label="Target schema" rules={[{ required: true }]}>
+        <Form.Item name="schema" label={t('scheduler.targetSchema')} rules={[{ required: true }]}>
           <Select showSearch options={schemas.map((s) => ({ label: s, value: s }))} />
         </Form.Item>
         <Form.Item
           name="url"
-          label="Source URL"
+          label={t('scheduler.sourceUrl')}
           rules={[{ required: true }]}
-          extra="File or service to import (anything ogr2ogr can read)."
+          extra={t('scheduler.sourceUrlHelp')}
         >
-          <Input placeholder="https://example.com/data.geojson" />
+          <Input
+            // i18n-ignore
+            placeholder="https://example.com/data.geojson"
+          />
         </Form.Item>
-        <Form.Item label="Schedule" required style={{ marginBottom: 0 }}>
+        <Form.Item label={t('scheduler.schedule')} required style={{ marginBottom: 0 }}>
           <Space.Compact style={{ width: '100%' }}>
             <Select
-              placeholder="Preset"
+              placeholder={t('scheduler.preset')}
               style={{ width: 200 }}
               allowClear
               value={preset}
@@ -149,84 +159,95 @@ export default function JobFormDrawer({
               name="schedule"
               noStyle
               rules={[
-                { required: true, message: 'Schedule is required' },
-                { pattern: CRON_SHAPE, message: 'Five cron fields, e.g. 0 3 * * *' },
+                { required: true, message: t('scheduler.scheduleRequired') },
+                { pattern: CRON_SHAPE, message: t('scheduler.cronShape') },
               ]}
             >
-              <Input placeholder="0 3 * * *" onChange={() => setPreset(undefined)} />
+              <Input
+                // i18n-ignore
+                placeholder="0 3 * * *"
+                onChange={() => setPreset(undefined)}
+              />
             </Form.Item>
           </Space.Compact>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            5-field cron: minute hour day-of-month month day-of-week.
+            {t('scheduler.cronHelp')}
           </Text>
         </Form.Item>
         <Space style={{ marginTop: 16 }} wrap>
-          <Form.Item name="epsg" label="EPSG">
+          <Form.Item
+            name="epsg"
+            // i18n-ignore
+            label="EPSG"
+          >
             <InputNumber min={1} style={{ width: 120 }} />
           </Form.Item>
-          <Form.Item name="type" label="Geometry type">
-            <Select style={{ width: 180 }} options={GEOMETRY_TYPES.map((t) => ({ label: t, value: t }))} />
+          <Form.Item name="type" label={t('scheduler.geometryType')}>
+            <Select style={{ width: 180 }} options={GEOMETRY_TYPES.map((g) => ({ label: g, value: g }))} />
           </Form.Item>
-          <Form.Item name="encoding" label="Encoding">
+          <Form.Item name="encoding" label={t('scheduler.encoding')}>
             <Select style={{ width: 120 }} options={['UTF8', 'LATIN1'].map((e) => ({ label: e, value: e }))} />
           </Form.Item>
         </Space>
         <Space wrap size="large">
           <Form.Item
             name="delete_append"
-            label="Append"
+            label={t('scheduler.append')}
             valuePropName="checked"
-            tooltip="Append to the table instead of overwriting it."
+            tooltip={t('scheduler.appendTip')}
           >
             <Switch />
           </Form.Item>
           <Form.Item
             name="download_schema"
-            label="Download schema"
+            label={t('scheduler.downloadSchema')}
             valuePropName="checked"
-            tooltip="Let the import derive the table schema from the source."
+            tooltip={t('scheduler.downloadSchemaTip')}
           >
             <Switch />
           </Form.Item>
           {supportsSortby && (
             <Form.Item
               name="use_sortby"
-              label="Sort pages (sortBy)"
+              label={t('scheduler.sortPages')}
               valuePropName="checked"
-              tooltip="Paged WFS 2.0.0 imports add a sortBy so pages neither overlap nor skip rows. Turn off for servers that reject sortBy. Has no effect on other sources."
+              tooltip={t('scheduler.sortPagesTip')}
             >
               <Switch />
             </Form.Item>
           )}
-          <Form.Item name="active" label="Active" valuePropName="checked">
+          <Form.Item name="active" label={t('scheduler.active')} valuePropName="checked">
             <Switch />
           </Form.Item>
           <Form.Item
             name="snapshot"
-            label="Snapshot"
+            label={t('scheduler.snapshot')}
             valuePropName="checked"
-            tooltip="Queue a snapshot after each successful import (see Tools → Snapshots)."
+            tooltip={t('scheduler.snapshotTip')}
           >
             <Switch />
           </Form.Item>
           {snapshotOn && (
             <Form.Item
               name="snapshot_formats"
-              label="Snapshot formats"
-              tooltip="Formats for the queued snapshot. None selected = the server default."
+              label={t('scheduler.snapshotFormats')}
+              tooltip={t('scheduler.snapshotFormatsTip')}
             >
               <Checkbox.Group options={SNAPSHOT_FORMATS.map((f) => ({ label: f, value: f }))} />
             </Form.Item>
           )}
         </Space>
-        <Form.Item name="presql" label="Pre-SQL" extra="Runs before the import.">
+        <Form.Item name="presql" label={t('scheduler.presql')} extra={t('scheduler.presqlHelp')}>
           <Input.TextArea rows={2} />
         </Form.Item>
-        <Form.Item name="postsql" label="Post-SQL" extra="Runs after a successful import.">
+        <Form.Item name="postsql" label={t('scheduler.postsql')} extra={t('scheduler.postsqlHelp')}>
           <Input.TextArea rows={2} />
         </Form.Item>
-        <Form.Item name="extra" label="Extra ogr2ogr arguments">
-          <Input placeholder="-nlt PROMOTE_TO_MULTI …" />
+        <Form.Item name="extra" label={t('scheduler.extraArgs')}>
+          <Input
+            // i18n-ignore
+            placeholder="-nlt PROMOTE_TO_MULTI …"
+          />
         </Form.Item>
       </Form>
     </Drawer>

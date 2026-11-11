@@ -4,6 +4,7 @@
 // SDK gap — endpoint: PATCH /api/v4/schemas/{schema}/tables/{table}/events
 // Source: MCP tool postEvents (requires schema + table)
 
+import i18n from '../../i18n';
 import { getStatus } from '../../baas/client';
 import type { TableSummary } from '../../hooks/useSchemaNames';
 
@@ -39,5 +40,5 @@ export async function setEventsEnabled(
       body: JSON.stringify({ enabled }),
     },
   );
-  if (!res.ok) throw new Error(`Failed to set events: ${res.status}`);
+  if (!res.ok) throw new Error(i18n.t('realtime.failedSetEvents', { status: res.status }));
 }

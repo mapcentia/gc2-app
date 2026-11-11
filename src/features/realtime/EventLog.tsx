@@ -1,5 +1,6 @@
 // src/features/realtime/EventLog.tsx
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Space, Badge, Tag } from 'antd';
 import { ClearOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 
@@ -24,6 +25,7 @@ export default function EventLog({
   events: EventEntry[];
   onClear: () => void;
 }) {
+  const { t } = useTranslation();
   const [paused, setPaused] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -41,10 +43,10 @@ export default function EventLog({
           icon={paused ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
           onClick={() => setPaused((p) => !p)}
         >
-          {paused ? 'Resume' : 'Pause'}
+          {paused ? t('realtime.resume') : t('realtime.pause')}
         </Button>
         <Button size="small" icon={<ClearOutlined />} onClick={onClear}>
-          Clear
+          {t('realtime.clear')}
         </Button>
       </Space>
 
@@ -62,7 +64,7 @@ export default function EventLog({
       >
         {events.length === 0 && (
           <div style={{ color: '#484f58', padding: 16, textAlign: 'center' }}>
-            Waiting for events...
+            {t('realtime.waiting')}
           </div>
         )}
         {events.map((e) => (

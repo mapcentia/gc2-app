@@ -6,6 +6,7 @@
 import { Ws } from '@mapcentia/gc2-sdk';
 import type { BatchMessage, SubscriptionRequest } from '@mapcentia/gc2-sdk';
 import { createStore } from '../../utils/createStore';
+import i18n, { formatTime } from '../../i18n';
 import type { EventEntry } from './EventLog';
 
 const MAX_EVENTS = 500;
@@ -30,7 +31,7 @@ let ws: Ws | null = null;
 let idCounter = 0;
 
 function handleBatch(msg: BatchMessage) {
-  const time = new Date().toLocaleTimeString('da-DK', { hour12: false });
+  const time = formatTime(new Date());
   const newEvents: EventEntry[] = [];
 
   for (const [rel, data] of Object.entries(msg.batch[msg.db] ?? {})) {
@@ -105,7 +106,7 @@ export function subscribe(sub: SubscriptionRequest) {
   try {
     if (ws?.connected) ws.subscribe(sub);
   } catch (e: any) {
-    realtimeStore.set({ error: e.message ?? 'Failed to subscribe' });
+    realtimeStore.set({ error: e.message ?? i18n.t('realtime.failedSubscribe') });
   }
 }
 
