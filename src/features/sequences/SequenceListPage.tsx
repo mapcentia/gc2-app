@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Table, Button, Space, Drawer, Form, Input, Select, Spin, Alert } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { message } from '../../utils/message';
 
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -11,6 +12,7 @@ import { optimisticInsert, optimisticDelete, rollback } from '../../data/optimis
 import { useSchemaNames } from '../../hooks/useSchemaNames';
 
 export default function SequenceListPage() {
+  const { t } = useTranslation();
   const [schema, setSchema] = useState<string>('');
   const [createOpen, setCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,7 +39,7 @@ export default function SequenceListPage() {
     setSaving(true);
     try {
       await getAdminClient().provisioning.sequences.postSequence(schema, values);
-      message.success('Sequence created');
+      message.success(t('sequences.created'));
       queryClient.invalidateQueries({ queryKey: ['sequences', schema] });
       form.resetFields();
       setCreateOpen(false);
@@ -53,7 +55,7 @@ export default function SequenceListPage() {
       const ctx = optimisticDelete(['sequences', schema], 'name', name);
       try {
         await getAdminClient().provisioning.sequences.deleteSequence(schema, name);
-        message.success('Sequence deleted');
+        message.success(t('sequences.deleted'));
         queryClient.invalidateQueries({ queryKey: ['sequences', schema] });
       } catch (e: unknown) {
         rollback(ctx);
@@ -64,10 +66,11 @@ export default function SequenceListPage() {
 
   return (
     <div>
+      {/* i18n-ignore */}
       <h2>Sequences</h2>
       <Space style={{ marginBottom: 16 }}>
         <Select
-          placeholder="Select schema"
+          placeholder={t('sequences.selectSchema')}
           value={schema || undefined}
           onChange={setSchema}
           options={schemas.map((s) => ({ label: s, value: s }))}
@@ -76,28 +79,28 @@ export default function SequenceListPage() {
         />
         {schema && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-            New Sequence
+            {t('sequences.newSequence')}
           </Button>
         )}
       </Space>
       {isLoading && schema ? <Spin /> : error ? <Alert type="error" message={String(error)} /> : (
         <>
-        <Input.Search placeholder="Search sequences..." allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
+        <Input.Search placeholder={t('sequences.search')} allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
         <Table
           dataSource={(sequences as any[]).filter((r) => !search || (r.name ?? '').toLowerCase().includes(search.toLowerCase()))}
           rowKey="name"
           size="small"
           pagination={false}
           columns={[
-            { title: 'Name', dataIndex: 'name', key: 'name',
+            { title: t('common.name'), dataIndex: 'name', key: 'name',
               sorter: (a: any, b: any) => (a.name ?? '').localeCompare(b.name ?? ''),
             },
-            { title: 'Data Type', dataIndex: 'data_type', key: 'data_type',
+            { title: t('sequences.dataType'), dataIndex: 'data_type', key: 'data_type',
               sorter: (a: any, b: any) => (a.data_type ?? '').localeCompare(b.data_type ?? ''),
             },
-            { title: 'Start', dataIndex: 'start_value', key: 'start' },
-            { title: 'Increment', dataIndex: 'increment_by', key: 'increment' },
-            { title: 'Actions', key: 'actions', width: 80,
+            { title: t('sequences.colStart'), dataIndex: 'start_value', key: 'start' },
+            { title: t('sequences.colIncrement'), dataIndex: 'increment_by', key: 'increment' },
+            { title: t('common.actions'), key: 'actions', width: 80,
               render: (_: unknown, record: any) => (
                 <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.name)} />
               ),
@@ -106,23 +109,26 @@ export default function SequenceListPage() {
         />
         </>
       )}
-      <Drawer title="Create Sequence" open={createOpen} onClose={() => setCreateOpen(false)} width={400}
-        extra={<Button type="primary" onClick={handleCreate} loading={saving}>Save</Button>}>
+      <Drawer title={t('sequences.createTitle')} open={createOpen} onClose={() => setCreateOpen(false)} width={400}
+        extra={<Button type="primary" onClick={handleCreate} loading={saving}>{t('common.save')}</Button>}>
         <Form form={form} layout="vertical" initialValues={{ data_type: 'bigint', increment_by: 1 }}>
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+          <Form.Item name="name" label={t('common.name')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="data_type" label="Data Type">
+          <Form.Item name="data_type" label={t('sequences.dataType')}>
             <Select options={[
+              // i18n-ignore
               { label: 'smallint', value: 'smallint' },
+              // i18n-ignore
               { label: 'integer', value: 'integer' },
+              // i18n-ignore
               { label: 'bigint', value: 'bigint' },
             ]} />
           </Form.Item>
-          <Form.Item name="start_value" label="Start Value">
+          <Form.Item name="start_value" label={t('sequences.startValue')}>
             <Input type="number" />
           </Form.Item>
-          <Form.Item name="increment_by" label="Increment By">
+          <Form.Item name="increment_by" label={t('sequences.incrementBy')}>
             <Input type="number" />
           </Form.Item>
         </Form>

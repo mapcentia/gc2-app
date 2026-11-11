@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Table, Button, Space, Drawer, Form, Input, Spin, Alert, Switch, Tag, Tooltip, Typography } from 'antd';
 import { PlusOutlined, DeleteOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Keyvalue } from '@mapcentia/gc2-sdk';
 import type { KeyvalueEntry } from '@mapcentia/gc2-sdk';
+import i18n from '../../i18n';
 import { message } from '../../utils/message';
 import { getAdminClient, getErrorMessage } from '../../baas/adminClient';
 import { useAuth } from '../../auth/AuthProvider';
@@ -19,7 +21,7 @@ function kvClient() {
 
 /** Live JSON validation: returns the parse error message, or null when valid. */
 function jsonError(text: string): string | null {
-  if (!text.trim()) return 'Value is required';
+  if (!text.trim()) return i18n.t('keyvalue.valueRequired');
   try {
     JSON.parse(text);
     return null;
@@ -29,6 +31,7 @@ function jsonError(text: string): string | null {
 }
 
 export default function KeyValuePage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const currentUser = (user?.uid as string) ?? '';
   const isSuperUser = user?.superUser === true;
@@ -80,10 +83,10 @@ export default function KeyValuePage() {
     try {
       if (editEntry) {
         await kvClient().patchKeyvalue(editEntry.key, { value, public: isPublic });
-        message.success('Key updated');
+        message.success(t('keyvalue.updated'));
       } else {
         await kvClient().postKeyvalue(keyName.trim(), { value, public: isPublic });
-        message.success('Key created');
+        message.success(t('keyvalue.created'));
       }
       queryClient.invalidateQueries({ queryKey: ['keyvalue'] });
       setDrawerOpen(false);
@@ -98,7 +101,7 @@ export default function KeyValuePage() {
     confirmDelete(entry.key, async () => {
       try {
         await kvClient().deleteKeyvalue(entry.key);
-        message.success('Key deleted');
+        message.success(t('keyvalue.deleted'));
         queryClient.invalidateQueries({ queryKey: ['keyvalue'] });
       } catch (e: unknown) {
         message.error(getErrorMessage(e));
@@ -112,13 +115,14 @@ export default function KeyValuePage() {
   return (
     <div>
       <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
+        {/* i18n-ignore */}
         <h2>Key/Value</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          New Key
+          {t('keyvalue.newKey')}
         </Button>
       </Space>
       <Input.Search
-        placeholder="Search keys..."
+        placeholder={t('keyvalue.search')}
         allowClear
         onChange={(e) => setSearch(e.target.value)}
         style={{ marginBottom: 12, maxWidth: 300 }}
@@ -131,16 +135,16 @@ export default function KeyValuePage() {
         size="small"
         pagination={false}
         columns={[
-          { title: 'Key', dataIndex: 'key', key: 'key',
+          { title: t('keyvalue.key'), dataIndex: 'key', key: 'key',
             sorter: (a: KeyvalueEntry, b: KeyvalueEntry) => a.key.localeCompare(b.key),
           },
-          { title: 'Owner', dataIndex: 'owner', key: 'owner',
-            render: (v: string | null) => v ?? <Text type="secondary">—</Text>,
+          { title: t('keyvalue.owner'), dataIndex: 'owner', key: 'owner',
+            render: (v: string | null) => v ?? <Text type="secondary">{/* i18n-ignore */}—</Text>,
           },
-          { title: 'Public', dataIndex: 'public', key: 'public',
-            render: (v: boolean) => (v ? <Tag color="green">public</Tag> : null),
+          { title: t('keyvalue.public'), dataIndex: 'public', key: 'public',
+            render: (v: boolean) => (v ? <Tag color="green">{t('keyvalue.publicTag')}</Tag> : null),
           },
-          { title: 'Actions', key: 'actions', width: 120,
+          { title: t('common.actions'), key: 'actions', width: 120,
             render: (_: unknown, entry: KeyvalueEntry) =>
               canModify(entry) ? (
                 <Space>
@@ -148,7 +152,7 @@ export default function KeyValuePage() {
                   <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(entry)} />
                 </Space>
               ) : (
-                <Tooltip title="Read-only (owned by another user)">
+                <Tooltip title={t('keyvalue.readOnlyTooltip')}>
                   <Button size="small" icon={<EyeOutlined />} onClick={() => openEntry(entry, true)} />
                 </Tooltip>
               ),
@@ -156,26 +160,31 @@ export default function KeyValuePage() {
         ]}
       />
       <Drawer
-        title={readOnly ? `View Key: ${keyName}` : editEntry ? `Edit Key: ${keyName}` : 'Create Key'}
+        title={readOnly ? t('keyvalue.viewTitle', { key: keyName }) : editEntry ? t('keyvalue.editTitle', { key: keyName }) : t('keyvalue.createTitle')}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         width={560}
         extra={
           !readOnly && (
             <Button type="primary" onClick={handleSave} loading={saving} disabled={!!valueError || (!editEntry && !keyName.trim())}>
-              Save
+              {t('common.save')}
             </Button>
           )
         }
       >
         <Form layout="vertical">
           {!editEntry && (
-            <Form.Item label="Key" required>
-              <Input value={keyName} onChange={(e) => setKeyName(e.target.value)} placeholder="my_key" />
+            <Form.Item label={t('keyvalue.key')} required>
+              <Input
+                value={keyName}
+                onChange={(e) => setKeyName(e.target.value)}
+                // i18n-ignore
+                placeholder="my_key"
+              />
             </Form.Item>
           )}
           <Form.Item
-            label="Value (JSON)"
+            label={t('keyvalue.valueJson')}
             validateStatus={!readOnly && valueError ? 'error' : undefined}
             help={!readOnly && valueError ? valueError : undefined}
           >
@@ -186,7 +195,7 @@ export default function KeyValuePage() {
               height="360px"
             />
           </Form.Item>
-          <Form.Item label="Public" tooltip="Public keys are readable by every user in the database.">
+          <Form.Item label={t('keyvalue.public')} tooltip={t('keyvalue.publicTooltip')}>
             <Switch checked={isPublic} onChange={setIsPublic} disabled={readOnly} />
           </Form.Item>
         </Form>

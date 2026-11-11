@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Table, Button, Space, Drawer, Form, Input, Select, Spin, Alert, Switch, Tag } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { message } from '../../utils/message';
 import { PlusOutlined, DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
 import type { CreateUserRequest, PatchUserRequest } from '@mapcentia/gc2-sdk';
@@ -24,6 +25,7 @@ function toGroups(v: unknown): string[] {
 }
 
 export default function UserListPage() {
+  const { t } = useTranslation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -80,7 +82,7 @@ export default function UserListPage() {
       } else {
         await getAdminClient().provisioning.users.postUser(payload as unknown as CreateUserRequest);
       }
-      message.success(isEdit ? 'User updated' : 'User created');
+      message.success(isEdit ? t('users.updated') : t('users.created'));
       queryClient.invalidateQueries({ queryKey: ['users'] });
       form.resetFields();
       setDrawerOpen(false);
@@ -97,7 +99,7 @@ export default function UserListPage() {
       const ctx = optimisticDelete(['users'], 'name', name);
       try {
         await getAdminClient().provisioning.users.deleteUser(name);
-        message.success('User deleted');
+        message.success(t('users.deleted'));
         queryClient.invalidateQueries({ queryKey: ['users'] });
       } catch (e: unknown) {
         rollback(ctx);
@@ -112,36 +114,37 @@ export default function UserListPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
+        {/* i18n-ignore */}
         <h2>Sub-Users</h2>
         <Space>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditUser(null); form.resetFields(); setDrawerOpen(true); }}>
-            New User
+            {t('users.newUser')}
           </Button>
         </Space>
       </Space>
-      <Input.Search placeholder="Search users..." allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
+      <Input.Search placeholder={t('users.search')} allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
       <Table
         dataSource={(users as any[]).filter((r) => !search || [r.name, r.email].some((v) => (v ?? '').toLowerCase().includes(search.toLowerCase())))}
         rowKey="name"
         size="small"
         pagination={false}
         columns={[
-          { title: 'Name', dataIndex: 'name', key: 'name',
+          { title: t('common.name'), dataIndex: 'name', key: 'name',
             sorter: (a: any, b: any) => (a.name ?? '').localeCompare(b.name ?? ''),
             render: (v: string, record: any) => (
               <Space size={6}>
                 {v}
-                {record.default_user && <Tag color="blue" style={{ margin: 0 }}>default</Tag>}
+                {record.default_user && <Tag color="blue" style={{ margin: 0 }}>{t('users.defaultTag')}</Tag>}
               </Space>
             ),
           },
-          { title: 'Email', dataIndex: 'email', key: 'email',
+          { title: t('users.email'), dataIndex: 'email', key: 'email',
             sorter: (a: any, b: any) => (a.email ?? '').localeCompare(b.email ?? ''),
           },
-          { title: 'Groups', dataIndex: 'user_group', key: 'groups',
+          { title: t('users.groups'), dataIndex: 'user_group', key: 'groups',
             render: (v: unknown) => toGroups(v).map((g) => <Tag key={g}>{g}</Tag>),
           },
-          { title: 'Actions', key: 'actions', width: 120,
+          { title: t('common.actions'), key: 'actions', width: 120,
             render: (_: unknown, record: any) => (
               <Space>
                 <Button size="small" icon={<EditOutlined />} onClick={() => {
@@ -155,24 +158,24 @@ export default function UserListPage() {
           },
         ]}
       />
-      <Drawer title={editUser ? 'Edit User' : 'Create User'} open={drawerOpen}
+      <Drawer title={editUser ? t('users.editTitle') : t('users.createTitle')} open={drawerOpen}
         onClose={() => { setDrawerOpen(false); setEditUser(null); }} width={480}
-        extra={<Button type="primary" onClick={handleSave} loading={saving}>Save</Button>}>
+        extra={<Button type="primary" onClick={handleSave} loading={saving}>{t('common.save')}</Button>}>
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Username" rules={[{ required: true }]}>
+          <Form.Item name="name" label={t('users.username')} rules={[{ required: true }]}>
             <Input disabled={!!editUser} />
           </Form.Item>
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
+          <Form.Item name="email" label={t('users.email')} rules={[{ required: true, type: 'email' }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="password" label="Password" rules={editUser ? [] : [{ required: true, min: 8 }]}>
+          <Form.Item name="password" label={t('users.password')} rules={editUser ? [] : [{ required: true, min: 8 }]}>
             <Input.Password />
           </Form.Item>
-          <Form.Item name="user_group" label="Groups" tooltip="Group memberships. Any other user can act as a group.">
-            <Select mode="multiple" allowClear showSearch placeholder="No groups" options={groupOptions} />
+          <Form.Item name="user_group" label={t('users.groups')} tooltip={t('users.groupsTooltip')}>
+            <Select mode="multiple" allowClear showSearch placeholder={t('users.noGroups')} options={groupOptions} />
           </Form.Item>
-          <Form.Item name="default_user" label="Default user" valuePropName="checked"
-            tooltip="Only one user can be the default; setting it here removes the flag from the current default user.">
+          <Form.Item name="default_user" label={t('users.defaultUser')} valuePropName="checked"
+            tooltip={t('users.defaultUserTooltip')}>
             <Switch />
           </Form.Item>
         </Form>

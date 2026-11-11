@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Table, Button, Space, Drawer, Form, Input, Modal, Select, Switch, Spin, Alert, Tag, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { message } from '../../utils/message';
 import { PlusOutlined, DeleteOutlined, EditOutlined, CopyOutlined } from '@ant-design/icons';
+import i18n from '../../i18n';
 import { getAdminClient, getErrorMessage } from '../../baas/adminClient';
 import { confirmDelete } from '../../components/ConfirmDelete';
 import { useQuery } from '@tanstack/react-query';
@@ -11,41 +13,43 @@ import { optimisticInsert, optimisticDelete, optimisticUpdate, rollback } from '
 // ──── Shared UI ────
 
 function ClientForm({ form, isEdit }: { form: ReturnType<typeof Form.useForm>[0]; isEdit: boolean }) {
+  const { t } = useTranslation();
   return (
     <Form form={form} layout="vertical" initialValues={{ public: false, confirm: true, two_factor: true }}>
       <Form.Item
         name="id"
-        label="Client ID"
-        extra={isEdit ? undefined : 'Leave empty to auto-generate an id.'}
+        label={t('clients.clientId')}
+        extra={isEdit ? undefined : t('clients.autoIdHint')}
       >
         <Input disabled={isEdit} />
       </Form.Item>
-      <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+      <Form.Item name="name" label={t('common.name')} rules={[{ required: true }]}>
         <Input />
       </Form.Item>
-      <Form.Item name="homepage" label="Homepage URL">
+      <Form.Item name="homepage" label={t('clients.homepageUrl')}>
         <Input />
       </Form.Item>
       <Form.Item
         name="redirect_uri"
-        label="Redirect URIs"
-        extra="Type a URI and press Enter (or comma) to add it."
+        label={t('clients.redirectUris')}
+        extra={t('clients.redirectHint')}
       >
         <Select
           mode="tags"
           open={false}
           suffixIcon={null}
           tokenSeparators={[',', ' ']}
+          // i18n-ignore
           placeholder="https://app.example.com/callback"
         />
       </Form.Item>
-      <Form.Item name="public" label="Public Client" valuePropName="checked">
+      <Form.Item name="public" label={t('clients.publicClient')} valuePropName="checked">
         <Switch />
       </Form.Item>
-      <Form.Item name="confirm" label="Require Confirmation" valuePropName="checked">
+      <Form.Item name="confirm" label={t('clients.requireConfirmation')} valuePropName="checked">
         <Switch />
       </Form.Item>
-      <Form.Item name="two_factor" label="Two-Factor Auth" valuePropName="checked">
+      <Form.Item name="two_factor" label={t('clients.twoFactor')} valuePropName="checked">
         <Switch />
       </Form.Item>
     </Form>
@@ -54,17 +58,17 @@ function ClientForm({ form, isEdit }: { form: ReturnType<typeof Form.useForm>[0]
 
 function clientColumns(onEdit: (r: any) => void, onDelete: (id: string) => void) {
   return [
-    { title: 'ID', dataIndex: 'id', key: 'id',
+    { title: i18n.t('clients.colId'), dataIndex: 'id', key: 'id',
       sorter: (a: any, b: any) => (a.id ?? '').localeCompare(b.id ?? ''),
     },
-    { title: 'Name', dataIndex: 'name', key: 'name',
+    { title: i18n.t('common.name'), dataIndex: 'name', key: 'name',
       sorter: (a: any, b: any) => (a.name ?? '').localeCompare(b.name ?? ''),
     },
-    { title: 'Homepage', dataIndex: 'homepage', key: 'homepage' },
-    { title: 'Public', dataIndex: 'public', key: 'public',
-      render: (v: boolean) => v ? <Tag color="green">Yes</Tag> : <Tag>No</Tag>,
+    { title: i18n.t('clients.colHomepage'), dataIndex: 'homepage', key: 'homepage' },
+    { title: i18n.t('clients.colPublic'), dataIndex: 'public', key: 'public',
+      render: (v: boolean) => v ? <Tag color="green">{i18n.t('common.yes')}</Tag> : <Tag>{i18n.t('common.no')}</Tag>,
     },
-    { title: 'Actions', key: 'actions', width: 120,
+    { title: i18n.t('common.actions'), key: 'actions', width: 120,
       render: (_: unknown, record: any) => (
         <Space>
           <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
@@ -80,15 +84,16 @@ function clientColumns(onEdit: (r: any) => void, onDelete: (id: string) => void)
  * only on creation; once this dialog is closed it cannot be shown again.
  */
 function SecretModal({ secret, onClose }: { secret: string | null; onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <Modal
-      title="Client secret"
+      title={t('clients.secretTitle')}
       open={secret !== null}
       onCancel={onClose}
       maskClosable={false}
       footer={
         <Button type="primary" onClick={onClose}>
-          I have stored the secret
+          {t('clients.secretStored')}
         </Button>
       }
     >
@@ -96,7 +101,7 @@ function SecretModal({ secret, onClose }: { secret: string | null; onClose: () =
         <Alert
           type="warning"
           showIcon
-          message="This secret is shown only once. Copy and store it now — it cannot be retrieved later."
+          message={t('clients.secretWarning')}
         />
         <Space.Compact style={{ width: '100%' }}>
           <Input readOnly value={secret ?? ''} style={{ fontFamily: 'monospace' }} />
@@ -104,14 +109,14 @@ function SecretModal({ secret, onClose }: { secret: string | null; onClose: () =
             icon={<CopyOutlined />}
             onClick={async () => {
               await navigator.clipboard.writeText(secret ?? '');
-              message.success('Secret copied');
+              message.success(t('clients.secretCopied'));
             }}
           >
-            Copy
+            {t('common.copy')}
           </Button>
         </Space.Compact>
         <Typography.Text type="secondary">
-          Use it as the client_secret for this OAuth client.
+          {t('clients.secretUse')}
         </Typography.Text>
       </Space>
     </Modal>
@@ -131,6 +136,7 @@ function parseRedirectUris(values: any) {
 // ──── Page ────
 
 export default function ClientListPage() {
+  const { t } = useTranslation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -162,7 +168,7 @@ export default function ClientListPage() {
         // The secret exists only in this response — surface it once, never store it.
         if (created?.secret) setCreatedSecret(created.secret);
       }
-      message.success(isEdit ? 'Client updated' : 'Client created');
+      message.success(isEdit ? t('clients.updated') : t('clients.created'));
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       form.resetFields();
       setDrawerOpen(false);
@@ -179,7 +185,7 @@ export default function ClientListPage() {
       const ctx = optimisticDelete(['clients'], 'id', id);
       try {
         await getAdminClient().provisioning.clients.deleteClient(id);
-        message.success('Client deleted');
+        message.success(t('clients.deleted'));
         queryClient.invalidateQueries({ queryKey: ['clients'] });
       } catch (e: unknown) {
         rollback(ctx);
@@ -203,18 +209,19 @@ export default function ClientListPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
+        {/* i18n-ignore */}
         <h2>OAuth Clients</h2>
         <Space>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditClient(null); form.resetFields(); setDrawerOpen(true); }}>
-            New Client
+            {t('clients.newClient')}
           </Button>
         </Space>
       </Space>
-      <Input.Search placeholder="Search clients..." allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
+      <Input.Search placeholder={t('clients.search')} allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
       <Table dataSource={(clients as any[]).filter((r) => !search || [r.id, r.name].some((v) => (v ?? '').toLowerCase().includes(search.toLowerCase())))} rowKey="id" size="small" pagination={false} columns={clientColumns(handleEdit, handleDelete)} />
-      <Drawer title={editClient ? 'Edit Client' : 'Create Client'} open={drawerOpen}
+      <Drawer title={editClient ? t('clients.editTitle') : t('clients.createTitle')} open={drawerOpen}
         onClose={() => { setDrawerOpen(false); setEditClient(null); }} width={520}
-        extra={<Button type="primary" onClick={handleSave} loading={saving}>Save</Button>}>
+        extra={<Button type="primary" onClick={handleSave} loading={saving}>{t('common.save')}</Button>}>
         <ClientForm form={form} isEdit={!!editClient} />
       </Drawer>
       <SecretModal secret={createdSecret} onClose={() => setCreatedSecret(null)} />
