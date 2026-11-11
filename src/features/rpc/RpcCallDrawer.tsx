@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Drawer, Button, Space, Switch, Typography, Alert } from 'antd';
 import { getRpc } from '../../baas/client';
 import { getAdminClient } from '../../baas/adminClient';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function RpcCallDrawer({ method, onClose }: Props) {
+  const { t } = useTranslation();
   const [params, setParams] = useState('{}');
   const [includeParams, setIncludeParams] = useState(true);
   const [dryRun, setDryRun] = useState(false);
@@ -44,19 +46,19 @@ export default function RpcCallDrawer({ method, onClose }: Props) {
   };
 
   return (
-    <Drawer title={`Call: ${method}`} open={!!method} onClose={onClose} width={600}>
+    <Drawer title={t('rpc.callTitle', { method })} open={!!method} onClose={onClose} width={600}>
       <Space style={{ marginBottom: 4 }}>
         <Switch checked={includeParams} onChange={setIncludeParams} size="small" />
-        <Typography.Text strong>Parameters (JSON)</Typography.Text>
+        <Typography.Text strong>{t('rpc.parametersJson')}</Typography.Text>
       </Space><br/>
       {includeParams && (
         <CodeEditor value={params} onChange={setParams} language="json" height="120px" />
       )}
       <Space style={{ marginTop: 12, marginBottom: 12 }}>
-        <Button type="primary" onClick={handleCall} loading={loading}>Execute</Button>
+        <Button type="primary" onClick={handleCall} loading={loading}>{t('rpc.execute')}</Button>
         <Space>
           <Switch checked={dryRun} onChange={setDryRun} size="small" />
-          <Typography.Text>Dry Run</Typography.Text>
+          <Typography.Text>{t('rpc.dryRun')}</Typography.Text>
         </Space>
       </Space>
       {error && <Alert type="error" title={error} style={{ marginBottom: 12 }} />}

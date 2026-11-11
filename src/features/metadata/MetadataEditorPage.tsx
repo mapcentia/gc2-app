@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Space, Alert, Card, Form } from 'antd';
 import { message } from '../../utils/message';
 import { SearchOutlined, SaveOutlined } from '@ant-design/icons';
@@ -33,6 +34,7 @@ function stripReadOnly(relations: Record<string, any>): Record<string, any> {
 }
 
 export default function MetadataEditorPage() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [metadata, setMetadata] = useState<any>(null);
   const [editJson, setEditJson] = useState('');
@@ -62,7 +64,7 @@ export default function MetadataEditorPage() {
       await getAdminClient().provisioning.metadata.patchMetaData({
         relations: stripReadOnly(relations),
       });
-      message.success('Metadata updated');
+      message.success(t('metadata.updated'));
     } catch (e: unknown) {
       message.error(getErrorMessage(e));
     }
@@ -70,22 +72,25 @@ export default function MetadataEditorPage() {
 
   return (
     <div>
-      <h2>Metadata Editor</h2>
+      <h2>
+        {/* i18n-ignore */}
+        Metadata Editor
+      </h2>
       <Space style={{ marginBottom: 16 }}>
         <Input
-          placeholder="schema.table or schema or tag:name"
+          placeholder={t('metadata.queryPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onPressEnter={search}
           style={{ width: 400 }}
         />
-        <Button icon={<SearchOutlined />} onClick={search} loading={loading}>Search</Button>
+        <Button icon={<SearchOutlined />} onClick={search} loading={loading}>{t('common.search')}</Button>
       </Space>
       {error && <Alert type="error" message={error} style={{ marginBottom: 12 }} />}
       {metadata && (
         <Card
-          title="Metadata"
-          extra={<Button type="primary" icon={<SaveOutlined />} onClick={save}>Save</Button>}
+          title={t('metadata.title')}
+          extra={<Button type="primary" icon={<SaveOutlined />} onClick={save}>{t('common.save')}</Button>}
         >
           <CodeEditor value={editJson} onChange={setEditJson} language="json" height="500px" />
         </Card>

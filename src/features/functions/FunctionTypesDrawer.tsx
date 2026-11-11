@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Drawer, Spin, Alert } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { getAdminClient } from '../../baas/adminClient';
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function FunctionTypesDrawer({ open, onClose }: Props) {
+  const { t } = useTranslation();
   const { data, isLoading, error } = useQuery({
     queryKey: ['function-types'],
     queryFn: async () => await getAdminClient().provisioning.functions.getInterfaces(),
@@ -17,7 +19,7 @@ export default function FunctionTypesDrawer({ open, onClose }: Props) {
   });
 
   return (
-    <Drawer title="TypeScript Interfaces" open={open} onClose={onClose} width={700}>
+    <Drawer title={t('functions.typeScriptInterfaces')} open={open} onClose={onClose} width={700}>
       {isLoading && <Spin />}
       {error && <Alert type="error" message={String(error)} />}
       {data && <CodeEditor value={data as string} readOnly height="calc(100vh - 120px)" />}

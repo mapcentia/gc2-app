@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Form, Input, InputNumber, Select, Button, Space, Spin, Upload } from 'antd';
 import { message } from '../../utils/message';
@@ -30,6 +31,7 @@ function readFileAsBase64(file: File): Promise<string> {
 }
 
 export default function FunctionFormPage() {
+  const { t } = useTranslation();
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const isNew = name === 'new';
@@ -71,7 +73,7 @@ export default function FunctionFormPage() {
       const e = JSON.parse(env || '{}');
       if (Object.keys(e).length > 0) parsedEnv = e;
     } catch {
-      message.error('Environment is not valid JSON');
+      message.error(t('functions.envInvalid'));
       return;
     }
 
@@ -97,7 +99,7 @@ export default function FunctionFormPage() {
       } else {
         await fns.patchFunction(name!, payload);
       }
-      message.success(isNew ? 'Function created' : 'Function updated');
+      message.success(isNew ? t('functions.created') : t('functions.updated'));
       queryClient.invalidateQueries({ queryKey: ['functions'] });
       navigate('/functions');
     } catch (e: unknown) {
@@ -110,87 +112,97 @@ export default function FunctionFormPage() {
   return (
     <div>
       <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/functions')} style={{ marginBottom: 8 }}>
+        {/* i18n-ignore */}
         Functions
       </Button>
-      <h2>{isNew ? 'New Function' : `Edit: ${name}`}</h2>
+      <h2>{isNew ? t('functions.newFunction') : t('functions.editTitle', { name })}</h2>
       <Form form={form} layout="vertical" style={{ maxWidth: 820 }}
         initialValues={{ runtime: 'nodejs20', handler: 'index.handler', package: 'inline', memory_mb: 128, timeout_s: 30 }}>
         <Space size="large" style={{ width: '100%' }} align="start">
-          <Form.Item name="name" label="Name" rules={[{ required: true }, { pattern: /^[A-Za-z_][A-Za-z0-9_]*$/, message: 'Must be a valid identifier' }]}>
+          <Form.Item name="name" label={t('common.name')} rules={[{ required: true }, { pattern: /^[A-Za-z_][A-Za-z0-9_]*$/, message: t('functions.identifierInvalid') }]}>
             <Input disabled={!isNew} style={{ width: 220 }} />
           </Form.Item>
-          <Form.Item name="runtime" label="Runtime" rules={[{ required: true }]}>
+          <Form.Item name="runtime" label={t('functions.runtime')} rules={[{ required: true }]}>
             <Select style={{ width: 160 }} options={[
+              // i18n-ignore
               { label: 'Node.js 20', value: 'nodejs20' },
+              // i18n-ignore
               { label: 'Python 3.12', value: 'python312' },
             ]} />
           </Form.Item>
-          <Form.Item name="handler" label="Handler" rules={[{ required: true }]} tooltip="Entry point as file.export, e.g. index.handler">
+          <Form.Item name="handler" label={t('functions.handler')} rules={[{ required: true }]} tooltip={t('functions.handlerTooltip')}>
             <Input style={{ width: 200 }} />
           </Form.Item>
         </Space>
 
-        <Form.Item name="package" label="Package">
+        <Form.Item name="package" label={t('functions.package')}>
           <Select style={{ width: 200 }} onChange={(v) => setPkg(v)} options={[
-            { label: 'Inline source', value: 'inline' },
-            { label: 'Zip bundle', value: 'zip' },
+            { label: t('functions.inlineSource'), value: 'inline' },
+            { label: t('functions.zipBundle'), value: 'zip' },
           ]} />
         </Form.Item>
 
         {pkg === 'inline' ? (
-          <Form.Item label="Code" required>
+          <Form.Item label={t('functions.code')} required>
             <CodeEditor value={code} onChange={setCode} height="280px" />
           </Form.Item>
         ) : (
-          <Form.Item label="Zip bundle" tooltip="A .zip whose handler entry file is resolved inside it">
+          <Form.Item label={t('functions.zipBundle')} tooltip={t('functions.zipTooltip')}>
             <Upload
               maxCount={1}
               accept=".zip"
               beforeUpload={async (file) => {
                 setCode(await readFileAsBase64(file));
-                message.success(`${file.name} loaded (${Math.round(file.size / 1024)} KB)`);
+                message.success(t('functions.zipLoaded', { name: file.name, size: Math.round(file.size / 1024) }));
                 return false;
               }}
             >
-              <Button icon={<UploadOutlined />}>Select .zip</Button>
+              <Button icon={<UploadOutlined />}>{t('functions.selectZip')}</Button>
             </Upload>
-            {code && <div style={{ marginTop: 8, color: '#888' }}>Bundle loaded ({Math.round((code.length * 3) / 4 / 1024)} KB base64).</div>}
+            {code && <div style={{ marginTop: 8, color: '#888' }}>{t('functions.bundleLoaded', { size: Math.round((code.length * 3) / 4 / 1024) })}</div>}
           </Form.Item>
         )}
 
         <Space size="large">
-          <Form.Item name="memory_mb" label="Memory (MB)">
+          <Form.Item name="memory_mb" label={t('functions.memory')}>
             <InputNumber style={{ width: 140 }} min={64} max={4096} />
           </Form.Item>
-          <Form.Item name="timeout_s" label="Timeout (s)">
+          <Form.Item name="timeout_s" label={t('functions.timeout')}>
             <InputNumber style={{ width: 140 }} min={1} max={900} />
           </Form.Item>
         </Space>
 
-        <Form.Item label="Environment variables (JSON)">
+        <Form.Item label={t('functions.envVars')}>
           <CodeEditor value={env} onChange={setEnv} language="json" height="100px" />
         </Form.Item>
 
-        <h3>Triggers</h3>
-        <Form.Item name="schedule" label="Schedule (cron)" tooltip="Five-field cron expression, e.g. 0 2 * * *">
-          <Input placeholder="0 2 * * *" style={{ width: 260 }} />
+        <h3>{t('functions.triggers')}</h3>
+        <Form.Item name="schedule" label={t('functions.schedule')} tooltip={t('functions.scheduleTooltip')}>
+          <Input
+            // i18n-ignore
+            placeholder="0 2 * * *" style={{ width: 260 }} />
         </Form.Item>
         <Space size="large" align="start">
-          <Form.Item name="eventTable" label="Event table" tooltip="Run on row changes to a schema.table">
-            <Input placeholder="public.orders" style={{ width: 260 }} />
+          <Form.Item name="eventTable" label={t('functions.eventTable')} tooltip={t('functions.eventTableTooltip')}>
+            <Input
+              // i18n-ignore
+              placeholder="public.orders" style={{ width: 260 }} />
           </Form.Item>
-          <Form.Item name="eventOps" label="On">
-            <Select mode="multiple" allowClear style={{ width: 260 }} placeholder="all" options={[
+          <Form.Item name="eventOps" label={t('functions.on')}>
+            <Select mode="multiple" allowClear style={{ width: 260 }} placeholder={t('functions.allPlaceholder')} options={[
+              // i18n-ignore
               { label: 'insert', value: 'insert' },
+              // i18n-ignore
               { label: 'update', value: 'update' },
+              // i18n-ignore
               { label: 'delete', value: 'delete' },
             ]} />
           </Form.Item>
         </Space>
 
         <Space>
-          <Button type="primary" onClick={handleSave}>Save</Button>
-          <Button onClick={() => navigate('/functions')}>Cancel</Button>
+          <Button type="primary" onClick={handleSave}>{t('common.save')}</Button>
+          <Button onClick={() => navigate('/functions')}>{t('common.cancel')}</Button>
         </Space>
       </Form>
     </div>

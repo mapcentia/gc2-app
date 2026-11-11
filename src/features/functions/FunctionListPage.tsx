@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Button, Space, Input, Spin, Alert, Tag } from 'antd';
 import { message } from '../../utils/message';
 import { PlusOutlined, DeleteOutlined, PlayCircleOutlined, CodeOutlined } from '@ant-design/icons';
@@ -20,6 +21,7 @@ function triggerTags(t: FunctionTriggers | null | undefined) {
 }
 
 export default function FunctionListPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [invokeName, setInvokeName] = useState<string | null>(null);
   const [typesOpen, setTypesOpen] = useState(false);
@@ -37,7 +39,7 @@ export default function FunctionListPage() {
     confirmDelete(name, async () => {
       try {
         await getAdminClient().provisioning.functions.deleteFunction(name);
-        message.success('Function deleted');
+        message.success(t('functions.deleted'));
         queryClient.invalidateQueries({ queryKey: ['functions'] });
       } catch (e: unknown) {
         message.error(getErrorMessage(e));
@@ -51,37 +53,40 @@ export default function FunctionListPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
-        <h2>Functions</h2>
+        <h2>{/* i18n-ignore */}Functions</h2>
         <Space>
-          <Button icon={<CodeOutlined />} onClick={() => setTypesOpen(true)}>TypeScript Types</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/functions/new')}>New Function</Button>
+          <Button icon={<CodeOutlined />} onClick={() => setTypesOpen(true)}>{t('rpc.typeScriptTypes')}</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/functions/new')}>{t('functions.newFunction')}</Button>
         </Space>
       </Space>
-      <Input.Search placeholder="Search functions..." allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
+      <Input.Search placeholder={t('functions.search')} allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
       <Table
         dataSource={functions.filter((r) => !search || (r.name ?? '').toLowerCase().includes(search.toLowerCase()))}
         rowKey="name"
         size="small"
         pagination={false}
         columns={[
-          { title: 'Name', dataIndex: 'name', key: 'name',
+          { title: t('common.name'), dataIndex: 'name', key: 'name',
             sorter: (a: FunctionInfo, b: FunctionInfo) => (a.name ?? '').localeCompare(b.name ?? ''),
             render: (n: string) => <a onClick={() => navigate(`/functions/${n}`)}>{n}</a>,
           },
-          { title: 'Runtime', dataIndex: 'runtime', key: 'runtime',
+          { title: t('functions.colRuntime'), dataIndex: 'runtime', key: 'runtime',
             render: (v: string) => <Tag>{v}</Tag>,
           },
-          { title: 'Package', dataIndex: 'package', key: 'package',
-            render: (v: string) => <Tag color={v === 'zip' ? 'purple' : 'default'}>{v ?? 'inline'}</Tag>,
+          { title: t('functions.colPackage'), dataIndex: 'package', key: 'package',
+            render: (v: string) => <Tag color={v === 'zip' ? 'purple' : 'default'}>{v ?? (
+              // i18n-ignore
+              'inline'
+            )}</Tag>,
           },
-          { title: 'Triggers', key: 'triggers',
+          { title: t('functions.triggers'), key: 'triggers',
             render: (_: unknown, r: FunctionInfo) => triggerTags(r.triggers),
           },
-          { title: 'Version', dataIndex: 'version', key: 'version', width: 80 },
-          { title: 'Actions', key: 'actions', width: 180,
+          { title: t('functions.colVersion'), dataIndex: 'version', key: 'version', width: 80 },
+          { title: t('common.actions'), key: 'actions', width: 180,
             render: (_: unknown, record: FunctionInfo) => (
               <Space>
-                <Button size="small" icon={<PlayCircleOutlined />} onClick={() => setInvokeName(record.name)}>Invoke</Button>
+                <Button size="small" icon={<PlayCircleOutlined />} onClick={() => setInvokeName(record.name)}>{t('functions.invoke')}</Button>
                 <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.name)} />
               </Space>
             ),

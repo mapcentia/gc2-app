@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Form, Input, InputNumber, Select, Button, Space, Spin } from 'antd';
 import { message } from '../../utils/message';
@@ -9,6 +10,7 @@ import { queryClient } from '../../data/queryClient';
 import CodeEditor from '../../components/CodeEditor';
 
 export default function RpcFormPage() {
+  const { t } = useTranslation();
   const { method } = useParams<{ method: string }>();
   const navigate = useNavigate();
   const isNew = method === 'new';
@@ -43,14 +45,14 @@ export default function RpcFormPage() {
       const th = JSON.parse(typeHints);
       if (Object.keys(th).length > 0) parsedTypeHints = th;
     } catch {
-      message.error('type_hints is not valid JSON');
+      message.error(t('rpc.typeHintsInvalid'));
       return;
     }
     try {
       const tf = JSON.parse(typeFormats);
       if (Object.keys(tf).length > 0) parsedTypeFormats = tf;
     } catch {
-      message.error('type_formats is not valid JSON');
+      message.error(t('rpc.typeFormatsInvalid'));
       return;
     }
 
@@ -68,7 +70,7 @@ export default function RpcFormPage() {
       } else {
         await admin.provisioning.rpcMethods.patchRpc(method!, payload);
       }
-      message.success(isNew ? 'Method created' : 'Method updated');
+      message.success(isNew ? t('rpc.created') : t('rpc.updated'));
       queryClient.invalidateQueries({ queryKey: ['rpc-methods'] });
       navigate('/rpc');
     } catch (e: unknown) {
@@ -81,39 +83,47 @@ export default function RpcFormPage() {
   return (
     <div>
       <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/rpc')} style={{ marginBottom: 8 }}>
+        {/* i18n-ignore */}
         RPC Methods
       </Button>
-      <h2>{isNew ? 'New RPC Method' : `Edit: ${method}`}</h2>
+      <h2>{isNew ? t('rpc.newTitle') : t('rpc.editTitle', { method })}</h2>
       <Form form={form} layout="vertical" style={{ maxWidth: 800 }}
         initialValues={{ output_format: 'json', srs: 4326 }}>
-        <Form.Item name="method" label="Method Name" rules={[{ required: true }]}>
+        <Form.Item name="method" label={t('rpc.methodName')} rules={[{ required: true }]}>
           <Input disabled={!isNew} />
         </Form.Item>
-        <Form.Item label="SQL Query" required>
+        <Form.Item label={t('rpc.sqlQuery')} required>
           <CodeEditor value={sql} onChange={setSql} language="sql" height="250px" />
         </Form.Item>
         <Space size="large" style={{ width: '100%' }}>
-          <Form.Item name="output_format" label="Output Format">
+          <Form.Item name="output_format" label={t('rpc.outputFormat')}>
             <Select style={{ width: 160 }} options={[
+              // i18n-ignore
               { label: 'JSON', value: 'json' },
+              // i18n-ignore
               { label: 'GeoJSON', value: 'geojson' },
+              // i18n-ignore
               { label: 'CSV', value: 'csv' },
+              // i18n-ignore
               { label: 'NDJson', value: 'ndjson' },
             ]} />
           </Form.Item>
-          <Form.Item name="srs" label="SRS (EPSG)" tooltip="Spatial reference system EPSG code for geometry output">
+          <Form.Item name="srs"
+            // i18n-ignore
+            label="SRS (EPSG)"
+            tooltip={t('rpc.srsTooltip')}>
             <InputNumber style={{ width: 160 }} min={0} />
           </Form.Item>
         </Space>
-        <Form.Item label="Type Hints" tooltip="Type hints for parameters where server-side inference is ambiguous, e.g. {&quot;date&quot;: &quot;timestamptz&quot;, &quot;days&quot;: &quot;integer&quot;}">
+        <Form.Item label={t('rpc.typeHints')} tooltip={t('rpc.typeHintsTooltip')}>
           <CodeEditor value={typeHints} onChange={setTypeHints} language="json" height="100px" />
         </Form.Item>
-        <Form.Item label="Type Formats" tooltip="Formatting rules for typed output columns, e.g. {&quot;date&quot;: &quot;D M d Y&quot;, &quot;time&quot;: &quot;H:i:s T&quot;}">
+        <Form.Item label={t('rpc.typeFormats')} tooltip={t('rpc.typeFormatsTooltip')}>
           <CodeEditor value={typeFormats} onChange={setTypeFormats} language="json" height="100px" />
         </Form.Item>
         <Space>
-          <Button type="primary" onClick={handleSave}>Save</Button>
-          <Button onClick={() => navigate('/rpc')}>Cancel</Button>
+          <Button type="primary" onClick={handleSave}>{t('common.save')}</Button>
+          <Button onClick={() => navigate('/rpc')}>{t('common.cancel')}</Button>
         </Space>
       </Form>
     </div>

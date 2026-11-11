@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Select, Space, Spin, Alert, Button, Card, Tree, Typography } from 'antd';
 import { PlayCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import { getGql } from '../../baas/client';
@@ -45,6 +46,7 @@ function buildSchemaTree(introSchema: any): DataNode[] {
 }
 
 export default function GraphqlExplorerPage() {
+  const { t } = useTranslation();
   const { data: schemasData, isLoading: schemasLoading, error: schemasError, refetch } = useSchemaNames();
   const schemas: string[] = (schemasData?.map((s) => s.name) ?? []).sort();
 
@@ -102,9 +104,12 @@ export default function GraphqlExplorerPage() {
   return (
     <div>
       <Space style={{ marginBottom: 12 }}>
-        <h2 style={{ margin: 0 }}>GraphQL Explorer</h2>
+        <h2 style={{ margin: 0 }}>
+          {/* i18n-ignore */}
+          GraphQL Explorer
+        </h2>
         <Select
-          placeholder="Select schema"
+          placeholder={t('graphql.selectSchema')}
           value={schema || undefined}
           onChange={(v) => graphqlStore.set({ schema: v, result: null, error: null })}
           options={schemas.map((s) => ({ label: s, value: s }))}
@@ -116,16 +121,16 @@ export default function GraphqlExplorerPage() {
       {schemasError && (
         <Alert
           type="error"
-          message="Could not load schemas"
+          message={t('graphql.loadSchemasError')}
           description={getErrorMessage(schemasError)}
-          action={<Button size="small" onClick={() => refetch()}>Retry</Button>}
+          action={<Button size="small" onClick={() => refetch()}>{t('graphql.retry')}</Button>}
           style={{ marginBottom: 12 }}
         />
       )}
       {introError && (
         <Alert
           type="error"
-          message={`Could not load the GraphQL schema for "${schema}"`}
+          message={t('graphql.introError', { schema })}
           description={introError}
           style={{ marginBottom: 12 }}
         />
@@ -133,7 +138,7 @@ export default function GraphqlExplorerPage() {
       {schema && (
         <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 12 }}>
           <Card
-            title="Schema"
+            title={t('graphql.schema')}
             size="small"
             style={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}
           >
@@ -147,11 +152,11 @@ export default function GraphqlExplorerPage() {
                 selectable={false}
               />
             ) : (
-              <Typography.Text type="secondary">No schema loaded</Typography.Text>
+              <Typography.Text type="secondary">{t('graphql.noSchema')}</Typography.Text>
             )}
           </Card>
           <div>
-            <Typography.Text strong>Query</Typography.Text>
+            <Typography.Text strong>{t('graphql.query')}</Typography.Text>
             <CodeEditor
               value={query}
               onChange={(v) => graphqlStore.set({ query: v })}
@@ -160,7 +165,7 @@ export default function GraphqlExplorerPage() {
               onRun={run}
               extensions={gqlExtensions}
             />
-            <Typography.Text strong style={{ display: 'block', marginTop: 8 }}>Variables</Typography.Text>
+            <Typography.Text strong style={{ display: 'block', marginTop: 8 }}>{t('graphql.variables')}</Typography.Text>
             <CodeEditor
               value={variables}
               onChange={(v) => graphqlStore.set({ variables: v })}
@@ -169,7 +174,7 @@ export default function GraphqlExplorerPage() {
             />
             <Space style={{ marginTop: 12, marginBottom: 12 }}>
               <Button type="primary" icon={<PlayCircleOutlined />} onClick={run} loading={loading}>
-                Run (Ctrl+Enter)
+                {t('graphql.run')}
               </Button>
             </Space>
             {error && <Alert type="error" message={error} style={{ marginBottom: 12 }} />}

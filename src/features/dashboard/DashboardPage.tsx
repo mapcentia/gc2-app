@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, Row, Col, Statistic, Spin, Alert } from 'antd';
 import { DatabaseOutlined, TableOutlined, HddOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { getStats } from '../../baas/client';
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const { data, isLoading, error } = useQuery({
     queryKey: ['db-stats'],
     queryFn: async () => await getStats().get(),
@@ -29,25 +31,28 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h2>Dashboard</h2>
+      <h2>
+        {/* i18n-ignore */}
+        Dashboard
+      </h2>
       <Row gutter={16}>
         <Col span={8}>
-          <Card><Statistic title="Schemas" value={schemaMap.size} prefix={<DatabaseOutlined />} /></Card>
+          <Card><Statistic title={t('dashboard.schemas')} value={schemaMap.size} prefix={<DatabaseOutlined />} /></Card>
         </Col>
         <Col span={8}>
-          <Card><Statistic title="Tables" value={stats?.number_of_tables ?? 0} prefix={<TableOutlined />} /></Card>
+          <Card><Statistic title={t('dashboard.tables')} value={stats?.number_of_tables ?? 0} prefix={<TableOutlined />} /></Card>
         </Col>
         <Col span={8}>
-          <Card><Statistic title="Database Size" value={stats?.total_size ?? 'N/A'} prefix={<HddOutlined />} /></Card>
+          <Card><Statistic title={t('dashboard.dbSize')} value={stats?.total_size ?? t('dashboard.na')} prefix={<HddOutlined />} /></Card>
         </Col>
       </Row>
       {schemaMap.size > 0 && (
-        <Card title="Schemas" style={{ marginTop: 16 }}>
+        <Card title={t('dashboard.schemas')} style={{ marginTop: 16 }}>
           <Row gutter={[16, 16]}>
             {[...schemaMap.entries()].map(([name, info]) => (
               <Col span={8} key={name}>
                 <Card size="small" title={name}>
-                  {info.tables.length} tables
+                  {t('dashboard.tableCount', { count: info.tables.length })}
                 </Card>
               </Col>
             ))}

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Select, Space, Spin, Alert, Typography } from 'antd';
 import { PlayCircleOutlined } from '@ant-design/icons';
 import { getSql } from '../../baas/client';
@@ -26,6 +27,7 @@ import CodeEditor from '../../components/CodeEditor';
 import ResultTable from '../../components/ResultTable';
 
 export default function SqlConsolePage() {
+  const { t } = useTranslation();
   const { query, format, selectedSchemas, result, rawResult, error, loading } = useSqlStore();
 
   const { data: schemasData, isLoading: schemasLoading, error: schemasError } = useSchemaNames();
@@ -99,10 +101,13 @@ export default function SqlConsolePage() {
   return (
     <div>
       <Space style={{ marginBottom: 12 }}>
-        <h2 style={{ margin: 0 }}>SQL Console</h2>
+        <h2 style={{ margin: 0 }}>
+          {/* i18n-ignore */}
+          SQL Console
+        </h2>
         <Select
           mode="multiple"
-          placeholder="Schemas for autocomplete"
+          placeholder={t('sql.schemasPlaceholder')}
           value={selectedSchemas}
           onChange={(v) => sqlStore.set({ selectedSchemas: v })}
           options={schemas.map((s) => ({ label: s, value: s }))}
@@ -110,7 +115,7 @@ export default function SqlConsolePage() {
           maxTagCount="responsive"
           allowClear
           loading={schemasLoading}
-          notFoundContent={schemasLoading ? <Spin size="small" /> : schemasError ? 'Failed to load' : undefined}
+          notFoundContent={schemasLoading ? <Spin size="small" /> : schemasError ? t('sql.loadFailed') : undefined}
         />
       </Space>
       <CodeEditor
@@ -123,15 +128,18 @@ export default function SqlConsolePage() {
       />
       <Space style={{ marginTop: 12, marginBottom: 12 }}>
         <Button type="primary" icon={<PlayCircleOutlined />} onClick={run} loading={loading}>
-          Run (Ctrl+Enter)
+          {t('sql.run')}
         </Button>
         <Select
           value={format}
           onChange={(v) => sqlStore.set({ format: v })}
           style={{ width: 120 }}
           options={[
+            // i18n-ignore
             { label: 'JSON', value: 'json' },
+            // i18n-ignore
             { label: 'CSV', value: 'csv' },
+            // i18n-ignore
             { label: 'GeoJSON', value: 'geojson' },
           ]}
         />
@@ -140,7 +148,7 @@ export default function SqlConsolePage() {
       {loading && <Spin />}
       {result && (
         <div>
-          <Typography.Text type="secondary">{result.data?.length ?? 0} rows returned</Typography.Text>
+          <Typography.Text type="secondary">{t('sql.rowsReturned', { count: result.data?.length ?? 0 })}</Typography.Text>
           <ResultTable data={result.data} schema={result.schema} />
         </div>
       )}
