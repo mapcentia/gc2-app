@@ -66,4 +66,18 @@ const c = { key: 'name', dataIndex: 'name', type: 'text', value: 'Value', label:
   it('reports 1-based line numbers', () => {
     expect(findHardcoded('const a = (\n  <div>\n    Hello\n  </div>\n);', 'x.tsx')[0].line).toBe(3);
   });
+
+  it('reports multi-line JSX text on its own line and honours an ignore above it', () => {
+    const body = '<div>\n  {/* i18n-ignore */}\n      Schemas\n</div>';
+    expect(texts(`const a = (\n${body}\n);`)).toEqual([]);
+    const f = findHardcoded('const a = (\n<div>\n\n\n      Schemas\n</div>\n);', 'x.tsx');
+    expect(f.map((x) => x.line)).toEqual([5]);
+  });
+
+  it('only an own-line ignore comment suppresses the next line', () => {
+    expect(texts(`const a = 1; // i18n-ignore\nconst b = <X title="Schemas" />;`)).toEqual(['Schemas']);
+    expect(texts(`const a = <X>\n  <b>x</b> {/* i18n-ignore */}\n  Schemas\n</X>;`)).toEqual(['Schemas']);
+    expect(texts(`  // i18n-ignore\nconst b = <X title="Schemas" />;`)).toEqual([]);
+    expect(texts(`  {/* i18n-ignore */}\nconst b = <X title="Schemas" />;`)).toEqual([]);
+  });
 });

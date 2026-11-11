@@ -12,6 +12,8 @@ const TEXT_NAMES = new Set([
 ]);
 const MESSAGE_METHODS = new Set(['success', 'error', 'warning', 'info', 'loading']);
 const IGNORE = /i18n-ignore/;
+/** A line that consists solely of an ignore comment. */
+const OWN_LINE_IGNORE = /^\s*(\/\/\s*i18n-ignore\b.*|\{\/\*\s*i18n-ignore\b.*\*\/\}|\/\*\s*i18n-ignore\b.*\*\/)\s*$/;
 const HAS_WORDS = /\p{L}{2}/u;
 
 /** String and template literals that can end up as displayed text in `node`, looking through ?:, ||, &&, ??. */
@@ -46,7 +48,7 @@ export function findHardcoded(source: string, fileName: string): Finding[] {
   const report = (pos: number, text: string) => {
     if (seen.has(pos) || !HAS_WORDS.test(text)) return;
     const line = sf.getLineAndCharacterOfPosition(pos).line; // 0-based
-    if (IGNORE.test(lines[line] ?? '') || (line > 0 && IGNORE.test(lines[line - 1] ?? ''))) return;
+    if (IGNORE.test(lines[line] ?? '') || (line > 0 && OWN_LINE_IGNORE.test(lines[line - 1] ?? ''))) return;
     seen.add(pos);
     findings.push({ file: fileName, line: line + 1, text });
   };
@@ -62,8 +64,8 @@ export function findHardcoded(source: string, fileName: string): Finding[] {
   const visit = (node: ts.Node) => {
     if (ts.isJsxText(node)) {
       const text = node.text.replace(/\s+/g, ' ').trim();
-      const offset = node.text.search(/\S/);
-      if (offset >= 0) report(node.getStart(sf) + offset, text);
+      // getStart() already skips the leading whitespace of the text.
+      if (text) report(node.getStart(sf), text);
     } else if (ts.isJsxExpression(node) && (ts.isJsxElement(node.parent) || ts.isJsxFragment(node.parent))) {
       reportExpr(node.expression);
     } else if (ts.isJsxAttribute(node) && TEXT_NAMES.has(node.name.getText(sf)) && node.initializer) {

@@ -30,8 +30,8 @@ export default function LoginPage() {
   return (
     <Flex justify="center" align="center" style={{ minHeight: '100vh', background: token.colorBgLayout }}>
       <Card style={{ width: 360, textAlign: 'center' }}>
-        <img src="https://gc2.io/img/gc2-logo-dark.svg" // i18n-ignore
-        alt="GC2" style={{ height: 40, marginBottom: 16 }} />
+        {/* i18n-ignore */}
+        <img src="https://gc2.io/img/gc2-logo-dark.svg" alt="GC2" style={{ height: 40, marginBottom: 16 }} />
         {/* i18n-ignore */}
         <Typography.Title level={3}>GC2 Admin</Typography.Title>
         <Typography.Paragraph type="secondary">
