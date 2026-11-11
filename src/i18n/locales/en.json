@@ -42,7 +42,6 @@
     "schemaPlaceholder": "Schema",
     "tablePlaceholder": "Table"
   },
-  "agent": {},
   "tables": {
     "privilegesUpdated_one": "Privileges updated on {{count}} table",
     "privilegesUpdated_other": "Privileges updated on {{count}} tables",
@@ -82,8 +81,10 @@
     "propertiesUpdated": "Properties updated",
     "saveProperties": "Save Properties",
     "updatedUserTo": "Updated {{subuser}} to {{privilege}}",
-    "updatedUsersTo": "Updated {{count}} users to {{privilege}}",
-    "setUsersTo": "Set {{count}} users to:",
+    "updatedUsersTo_one": "Updated {{count}} user to {{privilege}}",
+    "updatedUsersTo_other": "Updated {{count}} users to {{privilege}}",
+    "setUsersTo_one": "Set {{count}} user to:",
+    "setUsersTo_other": "Set {{count}} users to:",
     "user": "User",
     "invalidInteger": "Invalid integer: {{value}}",
     "invalidNumber": "Invalid number: {{value}}",
@@ -100,7 +101,8 @@
     "rowUpdated": "Row updated",
     "rowDeleted": "Row deleted",
     "noPrimaryKey": "This table has no primary key. Data is read-only.",
-    "rowsTotal": "{{count}} rows total",
+    "rowsTotal_one": "{{count}} row total",
+    "rowsTotal_other": "{{count}} rows total",
     "metadataUpdatedFor": "Metadata for \"{{name}}\" updated",
     "noFieldsSelected": "No fields selected",
     "metadataUpdatedForColumns": "Metadata updated for {{count}} columns",
@@ -514,6 +516,7 @@
     "incrementBy": "Increment By"
   },
   "users": {
+    "title": "Sub-Users",
     "updated": "User updated",
     "created": "User created",
     "deleted": "User deleted",

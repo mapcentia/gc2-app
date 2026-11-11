@@ -114,8 +114,7 @@ export default function UserListPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
-        {/* i18n-ignore */}
-        <h2>Sub-Users</h2>
+        <h2>{t('users.title')}</h2>
         <Space>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditUser(null); form.resetFields(); setDrawerOpen(true); }}>
             {t('users.newUser')}

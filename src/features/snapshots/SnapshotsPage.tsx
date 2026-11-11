@@ -258,9 +258,7 @@ export default function SnapshotsPage() {
         style={{ marginBottom: 16 }}
         type="info"
         showIcon
-        message={
-          <>{t('snapshots.intro')}</>
-        }
+        message={t('snapshots.intro')}
       />
 
       <Space style={{ marginBottom: 16 }} wrap>
