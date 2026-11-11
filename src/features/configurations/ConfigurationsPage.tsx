@@ -35,6 +35,8 @@ export default function ConfigurationsPage() {
   const [description, setDescription] = useState('');
   const [published, setPublished] = useState(true);
   const [body, setBody] = useState('');
+  /** The body as shown when the drawer opened; used to tell whether the user changed it. */
+  const [openedBody, setOpenedBody] = useState('');
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -81,8 +83,10 @@ export default function ConfigurationsPage() {
     setName(c.name);
     setDescription(c.description);
     setPublished(c.published);
-    // Shown exactly as stored; it is only rewritten if the user edits or formats it.
-    setBody(c.body);
+    // Shown formatted for readability. The stored text is only rewritten if the user edits it.
+    const shown = formatBody(c.body);
+    setBody(shown);
+    setOpenedBody(shown);
     setDrawerOpen(true);
   };
 
@@ -96,7 +100,7 @@ export default function ConfigurationsPage() {
         if (name !== editing.name) patch.name = name;
         if (description !== editing.description) patch.description = description;
         if (published !== editing.published) patch.published = published;
-        if (body !== editing.body) patch.body = body;
+        if (body !== openedBody) patch.body = body;
         if (Object.keys(patch).length > 0) {
           await client().patchConfiguration(editing.key, patch);
         }
