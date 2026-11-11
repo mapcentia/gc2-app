@@ -9,9 +9,11 @@ export interface Finding {
 const TEXT_NAMES = new Set([
   'title', 'label', 'placeholder', 'okText', 'cancelText', 'description', 'tooltip', 'extra',
   'message', 'help', 'content', 'alt', 'aria-label', 'emptyText', 'addonBefore', 'addonAfter',
+  'tip', 'notFoundContent', 'subTitle', 'header', 'checkedChildren', 'unCheckedChildren',
 ]);
 const MESSAGE_METHODS = new Set(['success', 'error', 'warning', 'info', 'loading']);
-const IGNORE = /i18n-ignore/;
+/** An ignore comment (`// i18n-ignore`, `/* i18n-ignore *\/`, `{/* i18n-ignore *\/}`) anywhere on the line. */
+const IGNORE = /(\/\/|\/\*)\s*i18n-ignore\b/;
 /** A line that consists solely of an ignore comment. */
 const OWN_LINE_IGNORE = /^\s*(\/\/\s*i18n-ignore\b.*|\{\/\*\s*i18n-ignore\b.*\*\/\}|\/\*\s*i18n-ignore\b.*\*\/)\s*$/;
 const HAS_WORDS = /\p{L}{2}/u;

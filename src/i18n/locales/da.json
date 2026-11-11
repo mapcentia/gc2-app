@@ -17,7 +17,9 @@
     "copy": "Kopier",
     "errorWithMessage": "Fejl: {{message}}",
     "selectedCount_one": "{{count}} valgt",
-    "selectedCount_other": "{{count}} valgte"
+    "selectedCount_other": "{{count}} valgte",
+    "apiError": "API-fejl {{status}}",
+    "clientNotInitialized": "Klienten er ikke initialiseret"
   },
   "auth": {
     "authenticating": "Godkender...",

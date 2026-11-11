@@ -17,7 +17,9 @@
     "copy": "Copy",
     "errorWithMessage": "Error: {{message}}",
     "selectedCount_one": "{{count}} selected",
-    "selectedCount_other": "{{count}} selected"
+    "selectedCount_other": "{{count}} selected",
+    "apiError": "API error {{status}}",
+    "clientNotInitialized": "Client not initialized"
   },
   "auth": {
     "authenticating": "Authenticating...",

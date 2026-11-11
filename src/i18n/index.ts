@@ -9,7 +9,15 @@ import da from './locales/da.json';
 
 export type { Lang };
 
-export const lang: Lang = detectLanguage(typeof navigator === 'undefined' ? undefined : navigator.languages);
+/** `navigator.languages`, or `[navigator.language]` when that list is missing or empty. */
+export function preferredLanguages(
+  nav: { languages?: readonly string[]; language?: string } | undefined,
+): readonly string[] {
+  if (nav?.languages?.length) return nav.languages;
+  return nav?.language ? [nav.language] : [];
+}
+
+export const lang: Lang = detectLanguage(preferredLanguages(typeof navigator === 'undefined' ? undefined : navigator));
 
 if (typeof document !== 'undefined') document.documentElement.lang = lang;
 

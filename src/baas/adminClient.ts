@@ -1,5 +1,6 @@
 import { createCentiaAdminClient, isCentiaApiError } from '@mapcentia/gc2-sdk';
 import type { CentiaAdminClient } from '@mapcentia/gc2-sdk';
+import i18n from '../i18n';
 import { getStatus } from './client';
 
 let adminClient: CentiaAdminClient | null = null;
@@ -28,7 +29,7 @@ export function getApiErrorCode(error: unknown): string | null {
 
 export function getErrorMessage(error: unknown): string {
   if (isCentiaApiError(error)) {
-    return error.message || `API error ${error.status}`;
+    return error.message || i18n.t('common.apiError', { status: error.status });
   }
   if (error instanceof Error) {
     return error.message;

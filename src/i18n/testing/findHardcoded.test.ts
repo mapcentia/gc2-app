@@ -17,6 +17,7 @@ describe('findHardcoded', () => {
   it.each([
     'title', 'label', 'placeholder', 'okText', 'cancelText', 'description', 'tooltip', 'extra',
     'message', 'help', 'content', 'alt', 'aria-label', 'emptyText', 'addonBefore', 'addonAfter',
+    'tip', 'notFoundContent', 'subTitle', 'header', 'checkedChildren', 'unCheckedChildren',
   ])('flags JSX attribute %s (string and expression)', (name) => {
     expect(texts(`const a = <X ${name}="Hello" />;`)).toEqual(['Hello']);
     expect(texts(`const a = <X ${name}={'Hello'} />;`)).toEqual(['Hello']);
@@ -57,6 +58,13 @@ const c = { key: 'name', dataIndex: 'name', type: 'text', value: 'Value', label:
     expect(texts(`// i18n-ignore\nconst a = <X title="Schemas" />;`)).toEqual([]);
     expect(texts(`const a = <X title="Schemas" />;\n// i18n-ignore`)).toEqual(['Schemas']);
     expect(texts(`<div>\n  {/* i18n-ignore */}\n  Schemas\n</div>`)).toEqual([]);
+  });
+
+  it('honours only real comments as i18n-ignore, not the text inside a string', () => {
+    expect(texts(`const a = <X title="see i18n-ignore docs" />;`)).toEqual(['see i18n-ignore docs']);
+    expect(texts(`const a = <X title="Schemas" />; /* i18n-ignore */`)).toEqual([]);
+    expect(texts(`const a = <p>{/* i18n-ignore */}Schemas</p>;`)).toEqual([]);
+    expect(texts(`const a = <X title="Schemas" />; // i18n-ignore: brand`)).toEqual([]);
   });
 
   it('flags template literals with substitutions', () => {

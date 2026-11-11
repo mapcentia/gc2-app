@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { CodeFlow, Sql, Rpc, Gql, Meta, Stats, Status, Claims, Tables, Users } from '@mapcentia/gc2-sdk';
 
 let codeFlow: CodeFlow | null = null;
@@ -31,41 +32,41 @@ export function initClient() {
 }
 
 export function getCodeFlow() {
-  if (!codeFlow) throw new Error('Client not initialized');
+  if (!codeFlow) throw new Error(i18n.t('common.clientNotInitialized'));
   return codeFlow;
 }
 export function getSql() {
-  if (!sql) throw new Error('Client not initialized');
+  if (!sql) throw new Error(i18n.t('common.clientNotInitialized'));
   return sql;
 }
 export function getRpc() {
-  if (!rpc) throw new Error('Client not initialized');
+  if (!rpc) throw new Error(i18n.t('common.clientNotInitialized'));
   return rpc;
 }
 export function getGql(schema: string) {
   return new Gql(schema);
 }
 export function getMeta() {
-  if (!meta) throw new Error('Client not initialized');
+  if (!meta) throw new Error(i18n.t('common.clientNotInitialized'));
   return meta;
 }
 export function getStats() {
-  if (!stats) throw new Error('Client not initialized');
+  if (!stats) throw new Error(i18n.t('common.clientNotInitialized'));
   return stats;
 }
 export function getStatus() {
-  if (!status) throw new Error('Client not initialized');
+  if (!status) throw new Error(i18n.t('common.clientNotInitialized'));
   return status;
 }
 export function getClaims() {
-  if (!claims) throw new Error('Client not initialized');
+  if (!claims) throw new Error(i18n.t('common.clientNotInitialized'));
   return claims;
 }
 export function getTables() {
-  if (!tables) throw new Error('Client not initialized');
+  if (!tables) throw new Error(i18n.t('common.clientNotInitialized'));
   return tables;
 }
 export function getUsers() {
-  if (!users) throw new Error('Client not initialized');
+  if (!users) throw new Error(i18n.t('common.clientNotInitialized'));
   return users;
 }
