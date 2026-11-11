@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Button, Input, Tag } from 'antd';
 import { message } from '../../utils/message';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function ConstraintManager({ schema, table, constraints, columns, onRefresh }: Props) {
+  const { t } = useTranslation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -23,7 +25,7 @@ export default function ConstraintManager({ schema, table, constraints, columns,
     setSaving(true);
     try {
       await getAdminClient().provisioning.constraints.postConstraint(schema, table, values);
-      message.success('Constraint created');
+      message.success(t('tables.constraintCreated'));
       setDrawerOpen(false);
       onRefresh();
     } catch (e: unknown) {
@@ -38,7 +40,7 @@ export default function ConstraintManager({ schema, table, constraints, columns,
       try {
         const admin = getAdminClient();
         await admin.provisioning.constraints.deleteConstraint(schema, table, name);
-        message.success('Constraint deleted');
+        message.success(t('tables.constraintDeleted'));
         onRefresh();
       } catch (e: unknown) {
         message.error(getErrorMessage(e));
@@ -49,29 +51,30 @@ export default function ConstraintManager({ schema, table, constraints, columns,
   return (
     <div>
       <Button icon={<PlusOutlined />} onClick={() => setDrawerOpen(true)} style={{ marginBottom: 12 }}>
-        Add Constraint
+        {t('tables.addConstraint')}
       </Button>
-      <Input.Search placeholder="Search constraints..." allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
+      <Input.Search placeholder={t('tables.searchConstraints')} allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
       <Table
         dataSource={constraints.filter((r: any) => !search || [r.name, r.constraint].some((v: string) => (v ?? '').toLowerCase().includes(search.toLowerCase())))}
         rowKey="name"
         size="small"
         pagination={false}
         columns={[
-          { title: 'Name', dataIndex: 'name', key: 'name',
+          { title: t('common.name'), dataIndex: 'name', key: 'name',
             sorter: (a: any, b: any) => (a.name ?? '').localeCompare(b.name ?? ''),
           },
-          { title: 'Type', dataIndex: 'constraint', key: 'type',
+          { title: t('common.type'), dataIndex: 'constraint', key: 'type',
             sorter: (a: any, b: any) => (a.constraint ?? '').localeCompare(b.constraint ?? ''),
             render: (v: string) => <Tag color={v === 'primary' ? 'gold' : v === 'foreign' ? 'blue' : 'default'}>{v}</Tag>,
           },
+          // i18n-ignore
           { title: 'Columns', dataIndex: 'columns', key: 'columns',
             render: (v: string[]) => v?.join(', ') ?? '',
           },
-          { title: 'References', key: 'ref',
+          { title: t('tables.references'), key: 'ref',
             render: (_: unknown, r: any) => r.referenced_table ? `${r.referenced_table}(${r.referenced_columns?.join(', ')})` : '',
           },
-          { title: 'Actions', key: 'actions', width: 80,
+          { title: t('common.actions'), key: 'actions', width: 80,
             render: (_: unknown, record: any) => (
               <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.name)} />
             ),

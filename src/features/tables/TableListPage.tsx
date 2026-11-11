@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Table, Button, Space, Drawer, Modal, Form, Input, InputNumber, Select, Checkbox, Spin, Alert, Tabs, Typography, Tag } from 'antd';
 import { message } from '../../utils/message';
@@ -24,9 +25,13 @@ type RelationType = 'TABLE' | 'VIEW' | 'MATERIALIZED VIEW' | 'FOREIGN TABLE';
 
 
 const RELATION_TYPE_META: Record<RelationType, { label: string; color: string }> = {
+  // i18n-ignore
   'TABLE': { label: 'TABLE', color: 'blue' },
+  // i18n-ignore
   'VIEW': { label: 'VIEW', color: 'green' },
+  // i18n-ignore
   'MATERIALIZED VIEW': { label: 'MAT. VIEW', color: 'purple' },
+  // i18n-ignore
   'FOREIGN TABLE': { label: 'FOREIGN', color: 'orange' },
 };
 
@@ -75,6 +80,7 @@ function DragHandle({ rowKey }: { rowKey: string }) {
 // ──── Tables ────
 
 function TablesPanel({ schema }: { schema: string }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -157,7 +163,7 @@ function TablesPanel({ schema }: { schema: string }) {
           },
         },
       });
-      message.success(`Metadata for "${tableName}" updated`);
+      message.success(t('tables.metadataUpdatedFor', { name: tableName }));
       await invalidateMeta(schema);
       setDirtyMeta((prev) => {
         const next = { ...prev };
@@ -195,7 +201,7 @@ function TablesPanel({ schema }: { schema: string }) {
           },
         },
       });
-      message.success(`Properties for "${propsModal}" updated`);
+      message.success(t('tables.propertiesUpdatedFor', { name: propsModal }));
       invalidateMeta(schema);
       setPropsModal(null);
     } catch (e: unknown) {
@@ -219,7 +225,7 @@ function TablesPanel({ schema }: { schema: string }) {
     const enabledPropKeys = Object.entries(bulkPropsEnabled).filter(([, v]) => v).map(([k]) => k);
 
     if (!enabledKeys.length && !enabledPropKeys.length) {
-      message.warning('No fields selected');
+      message.warning(t('tables.noFieldsSelected'));
       return;
     }
 
@@ -255,7 +261,7 @@ function TablesPanel({ schema }: { schema: string }) {
     setSavingBulk(true);
     try {
       await getAdminClient().provisioning.metadata.patchMetaData({ relations });
-      message.success(`Metadata updated for ${selectedRows.length} tables`);
+      message.success(t('tables.metadataUpdatedForTables', { count: selectedRows.length }));
       setBulkOpen(false);
       setSelectedRows([]);
       invalidateMeta(schema);
@@ -276,7 +282,7 @@ function TablesPanel({ schema }: { schema: string }) {
     setSaving(true);
     try {
       await getAdminClient().provisioning.tables.postTable(schema, { name: values.name });
-      message.success(`Table "${values.name}" created`);
+      message.success(t('tables.tableCreated', { name: values.name }));
       queryClient.invalidateQueries({ queryKey });
       queryClient.invalidateQueries({ queryKey: SCHEMAS_KEY });
       form.resetFields();
@@ -298,7 +304,7 @@ function TablesPanel({ schema }: { schema: string }) {
         old?.filter((t) => t.name !== name));
       try {
         await getAdminClient().provisioning.tables.deleteTable(schema, name);
-        message.success(`Table "${name}" deleted`);
+        message.success(t('tables.tableDeleted', { name }));
         queryClient.invalidateQueries({ queryKey });
         queryClient.invalidateQueries({ queryKey: SCHEMAS_KEY });
       } catch (e: unknown) {
@@ -314,7 +320,7 @@ function TablesPanel({ schema }: { schema: string }) {
     setSavingRename(true);
     try {
       await getAdminClient().provisioning.tables.patchTable(schema, renameTable, { name: newName });
-      message.success(`Table renamed to "${newName}"`);
+      message.success(t('tables.tableRenamed', { name: newName }));
       queryClient.invalidateQueries({ queryKey });
       queryClient.invalidateQueries({ queryKey: SCHEMAS_KEY });
       await invalidateMeta(schema);
@@ -372,7 +378,7 @@ function TablesPanel({ schema }: { schema: string }) {
 
     try {
       await getAdminClient().provisioning.metadata.patchMetaData({ relations });
-      message.success('Table order updated');
+      message.success(t('tables.tableOrderUpdated'));
       await invalidateMeta(schema);
     } catch (e: unknown) {
       message.error(getErrorMessage(e));
@@ -390,17 +396,17 @@ function TablesPanel({ schema }: { schema: string }) {
       <Space style={{ marginBottom: 16, justifyContent: 'flex-end', width: '100%' }}>
         {selectedRows.length > 0 && (
           <Button icon={<EditOutlined />} onClick={openBulkModal}>
-            Edit Metadata ({selectedRows.length})
+            {t('tables.editMetadata', { count: selectedRows.length })}
           </Button>
         )}
         {selectedRows.length > 0 && (
           <Button icon={<LockOutlined />} onClick={() => setPrivOpen(true)}>
-            Edit Privileges ({selectedRows.length})
+            {t('tables.editPrivileges', { count: selectedRows.length })}
           </Button>
         )}
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>New Table</Button>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>{t('tables.newTable')}</Button>
       </Space>
-      <Input.Search placeholder="Search tables..." allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
+      <Input.Search placeholder={t('tables.searchTables')} allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={sortedTables.map((r) => r.name)} strategy={verticalListSortingStrategy}>
       <Table
@@ -417,21 +423,22 @@ function TablesPanel({ schema }: { schema: string }) {
           { title: '', key: 'drag', width: 40, align: 'center' as const,
             render: (_: unknown, record: any) => <DragHandle rowKey={record.name} />,
           },
-          { title: 'Name', dataIndex: 'name', key: 'name', width: 160,
+          { title: t('common.name'), dataIndex: 'name', key: 'name', width: 160,
             sorter: (a, b) => a.name.localeCompare(b.name),
             render: (name: string) => <a onClick={() => navigate(`/schemas/${schema}/tables/${name}`)}>{name}</a>,
           },
-          { title: 'Type', dataIndex: 'relationType', key: 'relationType', width: 110,
+          { title: t('common.type'), dataIndex: 'relationType', key: 'relationType', width: 110,
             sorter: (a, b) => a.relationType.localeCompare(b.relationType),
             render: (v: RelationType) => {
               const meta = RELATION_TYPE_META[v] ?? { label: v, color: 'default' };
               return <Tag color={meta.color} style={{ margin: 0 }}>{meta.label}</Tag>;
             },
           },
+          // i18n-ignore
           { title: 'Columns', dataIndex: 'columnCount', key: 'columnCount', width: 80,
             sorter: (a, b) => a.columnCount - b.columnCount,
           },
-          { title: 'Title', key: 'title', width: 150,
+          { title: t('tables.title'), key: 'title', width: 150,
             render: (_: unknown, record: any) => (
               <Input size="small" placeholder="—"
                 value={(getMetaValue(record.name, 'title') as string) ?? ''}
@@ -439,7 +446,7 @@ function TablesPanel({ schema }: { schema: string }) {
               />
             ),
           },
-          { title: 'Abstract', key: 'abstract', width: 180,
+          { title: t('tables.abstract'), key: 'abstract', width: 180,
             render: (_: unknown, record: any) => (
               <Input size="small" placeholder="—"
                 value={(getMetaValue(record.name, 'abstract') as string) ?? ''}
@@ -447,7 +454,7 @@ function TablesPanel({ schema }: { schema: string }) {
               />
             ),
           },
-          { title: 'Group', key: 'group', width: 120,
+          { title: t('tables.group'), key: 'group', width: 120,
             render: (_: unknown, record: any) => (
               <Input size="small" placeholder="—"
                 value={(getMetaValue(record.name, 'group') as string) ?? ''}
@@ -455,7 +462,7 @@ function TablesPanel({ schema }: { schema: string }) {
               />
             ),
           },
-          { title: 'Sort ID', key: 'sort_id', width: 80,
+          { title: t('tables.sortId'), key: 'sort_id', width: 80,
             render: (_: unknown, record: any) => (
               <InputNumber size="small" placeholder="—"
                 value={getMetaValue(record.name, 'sort_id') as number | null}
@@ -464,7 +471,7 @@ function TablesPanel({ schema }: { schema: string }) {
               />
             ),
           },
-          { title: 'Tags', key: 'tags', width: 160,
+          { title: t('tables.tags'), key: 'tags', width: 160,
             render: (_: unknown, record: any) => (
               <Select size="small" mode="tags" placeholder="—" style={{ width: '100%' }}
                 value={(getMetaValue(record.name, 'tags') as string[]) ?? []}
@@ -472,14 +479,14 @@ function TablesPanel({ schema }: { schema: string }) {
               />
             ),
           },
-          { title: 'Properties', key: 'properties', width: 90, align: 'center' as const,
+          { title: t('tables.properties'), key: 'properties', width: 90, align: 'center' as const,
             render: (_: unknown, record: any) => (
               <Button size="small" icon={<CodeOutlined />} onClick={() => openPropsModal(record.name)}>
-                Edit
+                {t('common.edit')}
               </Button>
             ),
           },
-          { title: 'Actions', key: 'actions', width: 140,
+          { title: t('common.actions'), key: 'actions', width: 140,
             render: (_: unknown, record: any) => (
               <Space>
                 {dirtyMeta[record.name] && (
@@ -498,55 +505,55 @@ function TablesPanel({ schema }: { schema: string }) {
         </SortableContext>
       </DndContext>
       <Drawer
-        title={`Properties — ${propsModal}`}
+        title={t('tables.propertiesTitle', { name: propsModal })}
         open={!!propsModal}
         onClose={() => setPropsModal(null)}
         width={500}
         destroyOnClose
         extra={
           <Button type="primary" onClick={saveProps} loading={savingProps}>
-            Save
+            {t('common.save')}
           </Button>
         }
       >
         <MetaPropertiesForm form={propsForm} />
       </Drawer>
       <Drawer
-        title={`Bulk Edit Metadata (${selectedRows.length} tables)`}
+        title={t('tables.bulkEditMetadata', { count: selectedRows.length })}
         open={bulkOpen}
         onClose={() => setBulkOpen(false)}
         width={500}
         destroyOnClose
         extra={
           <Button type="primary" onClick={saveBulk} loading={savingBulk}>
-            Apply
+            {t('tables.apply')}
           </Button>
         }
       >
         <p style={{ marginBottom: 16, color: '#888' }}>
-          Only checked fields will be applied. Unchecked fields remain unchanged.
+          {t('tables.onlyCheckedFields')}
         </p>
         <Form form={bulkForm} layout="vertical">
-          <Form.Item label={<Checkbox checked={!!bulkEnabled.title} onChange={(e) => setBulkEnabled((p) => ({ ...p, title: e.target.checked }))}>Title</Checkbox>} name="title">
-            <Input placeholder="Title" disabled={!bulkEnabled.title} />
+          <Form.Item label={<Checkbox checked={!!bulkEnabled.title} onChange={(e) => setBulkEnabled((p) => ({ ...p, title: e.target.checked }))}>{t('tables.title')}</Checkbox>} name="title">
+            <Input placeholder={t('tables.title')} disabled={!bulkEnabled.title} />
           </Form.Item>
-          <Form.Item label={<Checkbox checked={!!bulkEnabled.abstract} onChange={(e) => setBulkEnabled((p) => ({ ...p, abstract: e.target.checked }))}>Abstract</Checkbox>} name="abstract">
-            <Input.TextArea rows={2} placeholder="Abstract" disabled={!bulkEnabled.abstract} />
+          <Form.Item label={<Checkbox checked={!!bulkEnabled.abstract} onChange={(e) => setBulkEnabled((p) => ({ ...p, abstract: e.target.checked }))}>{t('tables.abstract')}</Checkbox>} name="abstract">
+            <Input.TextArea rows={2} placeholder={t('tables.abstract')} disabled={!bulkEnabled.abstract} />
           </Form.Item>
-          <Form.Item label={<Checkbox checked={!!bulkEnabled.group} onChange={(e) => setBulkEnabled((p) => ({ ...p, group: e.target.checked }))}>Group</Checkbox>} name="group">
-            <Input placeholder="Group" disabled={!bulkEnabled.group} />
+          <Form.Item label={<Checkbox checked={!!bulkEnabled.group} onChange={(e) => setBulkEnabled((p) => ({ ...p, group: e.target.checked }))}>{t('tables.group')}</Checkbox>} name="group">
+            <Input placeholder={t('tables.group')} disabled={!bulkEnabled.group} />
           </Form.Item>
-          <Form.Item label={<Checkbox checked={!!bulkEnabled.sort_id} onChange={(e) => setBulkEnabled((p) => ({ ...p, sort_id: e.target.checked }))}>Sort ID</Checkbox>} name="sort_id">
-            <InputNumber style={{ width: '100%' }} placeholder="Sort ID" disabled={!bulkEnabled.sort_id} />
+          <Form.Item label={<Checkbox checked={!!bulkEnabled.sort_id} onChange={(e) => setBulkEnabled((p) => ({ ...p, sort_id: e.target.checked }))}>{t('tables.sortId')}</Checkbox>} name="sort_id">
+            <InputNumber style={{ width: '100%' }} placeholder={t('tables.sortId')} disabled={!bulkEnabled.sort_id} />
           </Form.Item>
-          <Form.Item label={<Checkbox checked={!!bulkEnabled.tags} onChange={(e) => setBulkEnabled((p) => ({ ...p, tags: e.target.checked }))}>Tags</Checkbox>} name="tags">
-            <Select mode="tags" placeholder="Tags" disabled={!bulkEnabled.tags} />
+          <Form.Item label={<Checkbox checked={!!bulkEnabled.tags} onChange={(e) => setBulkEnabled((p) => ({ ...p, tags: e.target.checked }))}>{t('tables.tags')}</Checkbox>} name="tags">
+            <Select mode="tags" placeholder={t('tables.tags')} disabled={!bulkEnabled.tags} />
           </Form.Item>
         </Form>
         <div style={{ marginTop: 16, borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
-          <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>Properties</Typography.Text>
+          <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>{t('tables.properties')}</Typography.Text>
           <p style={{ marginBottom: 12, color: '#888', fontSize: 13 }}>
-            Only checked property fields will be applied to the selected tables.
+            {t('tables.onlyCheckedProperties')}
           </p>
           <MetaPropertiesForm
             form={bulkPropsForm}
@@ -562,24 +569,24 @@ function TablesPanel({ schema }: { schema: string }) {
         onClose={() => setPrivOpen(false)}
         onApplied={() => setSelectedRows([])}
       />
-      <Drawer title="Create Table" open={createOpen} onClose={() => setCreateOpen(false)} width={400}
-        extra={<Button type="primary" onClick={handleCreate} loading={saving}>Save</Button>}>
+      <Drawer title={t('tables.createTable')} open={createOpen} onClose={() => setCreateOpen(false)} width={400}
+        extra={<Button type="primary" onClick={handleCreate} loading={saving}>{t('common.save')}</Button>}>
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Table Name" rules={[{ required: true }]}>
+          <Form.Item name="name" label={t('tables.tableName')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
         </Form>
       </Drawer>
       <Drawer
-        title={`Rename Table — ${renameTable}`}
+        title={t('tables.renameTableTitle', { name: renameTable })}
         open={!!renameTable}
         onClose={() => setRenameTable(null)}
         width={400}
         destroyOnClose
-        extra={<Button type="primary" onClick={handleRename} loading={savingRename}>Rename</Button>}
+        extra={<Button type="primary" onClick={handleRename} loading={savingRename}>{t('tables.rename')}</Button>}
       >
         <Form form={renameForm} layout="vertical">
-          <Form.Item name="name" label="New Name" rules={[{ required: true, message: 'Name is required' }]}>
+          <Form.Item name="name" label={t('tables.newName')} rules={[{ required: true, message: t('tables.nameRequired') }]}>
             <Input />
           </Form.Item>
         </Form>
@@ -591,6 +598,7 @@ function TablesPanel({ schema }: { schema: string }) {
 // ──── Sequences ────
 
 function SequencesPanel({ schema }: { schema: string }) {
+  const { t } = useTranslation();
   const [createOpen, setCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -611,7 +619,7 @@ function SequencesPanel({ schema }: { schema: string }) {
     setSaving(true);
     try {
       await getAdminClient().provisioning.sequences.postSequence(schema, values);
-      message.success('Sequence created');
+      message.success(t('tables.sequenceCreated'));
       queryClient.invalidateQueries({ queryKey: ['sequences', schema] });
       form.resetFields();
       setCreateOpen(false);
@@ -626,7 +634,7 @@ function SequencesPanel({ schema }: { schema: string }) {
     confirmDelete(name, async () => {
       try {
         await getAdminClient().provisioning.sequences.deleteSequence(schema, name);
-        message.success('Sequence deleted');
+        message.success(t('tables.sequenceDeleted'));
         queryClient.invalidateQueries({ queryKey: ['sequences', schema] });
       } catch (e: unknown) {
         message.error(getErrorMessage(e));
@@ -640,47 +648,50 @@ function SequencesPanel({ schema }: { schema: string }) {
   return (
     <div>
       <Space style={{ marginBottom: 16, justifyContent: 'flex-end', width: '100%' }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>New Sequence</Button>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>{t('tables.newSequence')}</Button>
       </Space>
-      <Input.Search placeholder="Search sequences..." allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
+      <Input.Search placeholder={t('tables.searchSequences')} allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
       <Table
         dataSource={(sequences as any[]).filter((r) => !search || (r.name ?? '').toLowerCase().includes(search.toLowerCase()))}
         rowKey="name"
         size="small"
         pagination={false}
         columns={[
-          { title: 'Name', dataIndex: 'name', key: 'name',
+          { title: t('common.name'), dataIndex: 'name', key: 'name',
             sorter: (a: any, b: any) => (a.name ?? '').localeCompare(b.name ?? ''),
           },
-          { title: 'Data Type', dataIndex: 'data_type', key: 'data_type',
+          { title: t('tables.dataType'), dataIndex: 'data_type', key: 'data_type',
             sorter: (a: any, b: any) => (a.data_type ?? '').localeCompare(b.data_type ?? ''),
           },
-          { title: 'Start', dataIndex: 'start_value', key: 'start' },
-          { title: 'Increment', dataIndex: 'increment_by', key: 'increment' },
-          { title: 'Actions', key: 'actions', width: 80,
+          { title: t('tables.start'), dataIndex: 'start_value', key: 'start' },
+          { title: t('tables.increment'), dataIndex: 'increment_by', key: 'increment' },
+          { title: t('common.actions'), key: 'actions', width: 80,
             render: (_: unknown, record: any) => (
               <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.name)} />
             ),
           },
         ]}
       />
-      <Drawer title="Create Sequence" open={createOpen} onClose={() => setCreateOpen(false)} width={400}
-        extra={<Button type="primary" onClick={handleCreate} loading={saving}>Save</Button>}>
+      <Drawer title={t('tables.createSequence')} open={createOpen} onClose={() => setCreateOpen(false)} width={400}
+        extra={<Button type="primary" onClick={handleCreate} loading={saving}>{t('common.save')}</Button>}>
         <Form form={form} layout="vertical" initialValues={{ data_type: 'bigint', increment_by: 1 }}>
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+          <Form.Item name="name" label={t('common.name')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="data_type" label="Data Type">
+          <Form.Item name="data_type" label={t('tables.dataType')}>
             <Select options={[
+              // i18n-ignore
               { label: 'smallint', value: 'smallint' },
+              // i18n-ignore
               { label: 'integer', value: 'integer' },
+              // i18n-ignore
               { label: 'bigint', value: 'bigint' },
             ]} />
           </Form.Item>
-          <Form.Item name="start_value" label="Start Value">
+          <Form.Item name="start_value" label={t('tables.startValue')}>
             <Input type="number" />
           </Form.Item>
-          <Form.Item name="increment_by" label="Increment By">
+          <Form.Item name="increment_by" label={t('tables.incrementBy')}>
             <Input type="number" />
           </Form.Item>
         </Form>
@@ -692,19 +703,22 @@ function SequencesPanel({ schema }: { schema: string }) {
 // ──── Page ────
 
 export default function TableListPage() {
+  const { t } = useTranslation();
   const { s: schema } = useParams<{ s: string }>();
   const navigate = useNavigate();
 
   return (
     <div>
       <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/schemas')} style={{ marginBottom: 8 }}>
-        Schemas
+        {/* i18n-ignore */}Schemas
       </Button>
       <h2>{schema}</h2>
       <Tabs
         defaultActiveKey="tables"
         items={[
+          // i18n-ignore
           { key: 'tables', label: 'Tables', children: <TablesPanel schema={schema!} /> },
+          // i18n-ignore
           { key: 'sequences', label: 'Sequences', children: <SequencesPanel schema={schema!} /> },
         ]}
       />

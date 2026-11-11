@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Form, Spin } from 'antd';
 import { message } from '../../utils/message';
 import { SaveOutlined } from '@ant-design/icons';
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function MetadataManager({ schema, table }: Props) {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -47,7 +49,7 @@ export default function MetadataManager({ schema, table }: Props) {
           },
         },
       });
-      message.success('Properties updated');
+      message.success(t('tables.propertiesUpdated'));
     } catch (e: unknown) {
       message.error(getErrorMessage(e));
     } finally {
@@ -61,7 +63,7 @@ export default function MetadataManager({ schema, table }: Props) {
     <div style={{ maxWidth: 720 }}>
       <MetaPropertiesForm form={form} />
       <Button type="primary" icon={<SaveOutlined />} onClick={save} loading={saving} style={{ marginTop: 12 }}>
-        Save Properties
+        {t('tables.saveProperties')}
       </Button>
     </div>
   );

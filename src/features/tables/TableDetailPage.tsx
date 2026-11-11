@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Tabs, Spin, Alert, Button, Descriptions, Tag } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
@@ -13,13 +14,18 @@ import PrivilegeManager from './PrivilegeManager';
 type RelationType = 'TABLE' | 'VIEW' | 'MATERIALIZED VIEW' | 'FOREIGN TABLE';
 
 const RELATION_TYPE_META: Record<RelationType, { label: string; color: string }> = {
+  // i18n-ignore
   'TABLE': { label: 'TABLE', color: 'blue' },
+  // i18n-ignore
   'VIEW': { label: 'VIEW', color: 'green' },
+  // i18n-ignore
   'MATERIALIZED VIEW': { label: 'MAT. VIEW', color: 'purple' },
+  // i18n-ignore
   'FOREIGN TABLE': { label: 'FOREIGN', color: 'orange' },
 };
 
 export default function TableDetailPage() {
+  const { t } = useTranslation();
   const { s: schema, t: table } = useParams<{ s: string; t: string }>();
   const navigate = useNavigate();
 
@@ -55,23 +61,23 @@ export default function TableDetailPage() {
       </h2>
       {tableData?.comment && (
         <Descriptions size="small" style={{ marginBottom: 16 }}>
-          <Descriptions.Item label="Comment">{tableData.comment}</Descriptions.Item>
+          <Descriptions.Item label={t('tables.comment')}>{tableData.comment}</Descriptions.Item>
         </Descriptions>
       )}
       <Tabs items={[
-        { key: 'columns', label: `Columns (${columns.length})`,
+        { key: 'columns', label: t('tables.columnsTab', { count: columns.length }),
           children: <ColumnEditor schema={schema!} table={table!} columns={columns} onRefresh={refetch} />,
         },
-        { key: 'constraints', label: `Constraints (${constraints.length})`,
+        { key: 'constraints', label: t('tables.constraintsTab', { count: constraints.length }),
           children: <ConstraintManager schema={schema!} table={table!} constraints={constraints} columns={columnNames} onRefresh={refetch} />,
         },
-        { key: 'indexes', label: `Indexes (${indices.length})`,
+        { key: 'indexes', label: t('tables.indexesTab', { count: indices.length }),
           children: <IndexManager schema={schema!} table={table!} indices={indices} columns={columnNames} onRefresh={refetch} />,
         },
-        { key: 'privileges', label: 'Privileges',
+        { key: 'privileges', label: t('tables.privilegesTab'),
           children: <PrivilegeManager schema={schema!} table={table!} />,
         },
-        { key: 'data', label: 'Data',
+        { key: 'data', label: t('tables.dataTab'),
           children: <DataEditor schema={schema!} table={table!} columns={columns} constraints={constraints} />,
         },
       ]} />

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Button, Space, Input, InputNumber, Switch, Checkbox, Drawer, Form, Select, Tag, Spin } from 'antd';
 import { message } from '../../utils/message';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined, HolderOutlined } from '@ant-design/icons';
@@ -46,6 +47,7 @@ function SortableDataRow(props: any) {
 }
 
 export default function ColumnEditor({ schema, table, columns, onRefresh }: Props) {
+  const { t } = useTranslation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editCol, setEditCol] = useState<any>(null);
   const [search, setSearch] = useState('');
@@ -102,7 +104,7 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
           },
         },
       });
-      message.success(`Metadata for "${colName}" updated`);
+      message.success(t('tables.metadataUpdatedFor', { name: colName }));
       await invalidateMeta(schema);
       setDirtyMeta((prev) => {
         const next = { ...prev };
@@ -126,7 +128,7 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
     const values = bulkForm.getFieldsValue();
     const enabledKeys = Object.entries(bulkEnabled).filter(([, v]) => v).map(([k]) => k);
     if (!enabledKeys.length) {
-      message.warning('No fields selected');
+      message.warning(t('tables.noFieldsSelected'));
       return;
     }
 
@@ -146,7 +148,7 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
           [qualifiedName]: { fields: fieldsPatch },
         },
       });
-      message.success(`Metadata updated for ${selectedRows.length} columns`);
+      message.success(t('tables.metadataUpdatedForColumns', { count: selectedRows.length }));
       setBulkOpen(false);
       setSelectedRows([]);
       invalidateMeta(schema);
@@ -162,7 +164,7 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
       try {
         const admin = getAdminClient();
         await admin.provisioning.columns.deleteColumn(schema, table, name);
-        message.success(`Column "${name}" deleted`);
+        message.success(t('tables.columnDeleted', { name }));
         onRefresh();
       } catch (e: unknown) {
         message.error(getErrorMessage(e));
@@ -225,7 +227,7 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
           [qualifiedName]: { fields: fieldsPatch },
         },
       });
-      message.success('Column order updated');
+      message.success(t('tables.columnOrderUpdated'));
       await invalidateMeta(schema);
     } catch (e: unknown) {
       message.error(getErrorMessage(e));
@@ -241,15 +243,15 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
     <div>
       <Space style={{ marginBottom: 12 }}>
         <Button icon={<PlusOutlined />} onClick={() => { setEditCol(null); setDrawerOpen(true); }}>
-          Add Column
+          {t('tables.addColumn')}
         </Button>
         {selectedRows.length > 0 && (
           <Button icon={<EditOutlined />} onClick={openBulkModal}>
-            Edit Metadata ({selectedRows.length})
+            {t('tables.editMetadata', { count: selectedRows.length })}
           </Button>
         )}
       </Space>
-      <Input.Search placeholder="Search columns..." allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
+      <Input.Search placeholder={t('tables.searchColumns')} allowClear onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 12, maxWidth: 300 }} />
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={dataSource.map((r: any) => r.name)} strategy={verticalListSortingStrategy}>
           <Table
@@ -266,17 +268,17 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
               { title: '', key: 'drag', width: 40, align: 'center' as const,
                 render: (_: unknown, record: any) => <DragHandle rowKey={record.name} />,
               },
-              { title: 'Name', dataIndex: 'name', key: 'name',
+              { title: t('common.name'), dataIndex: 'name', key: 'name',
                 sorter: (a: any, b: any) => (a.name ?? '').localeCompare(b.name ?? ''),
               },
-              { title: 'Type', dataIndex: 'type', key: 'type',
+              { title: t('common.type'), dataIndex: 'type', key: 'type',
                 sorter: (a: any, b: any) => (a.type ?? '').localeCompare(b.type ?? ''),
               },
-              { title: 'Nullable', dataIndex: 'is_nullable', key: 'nullable',
-                render: (v: boolean) => v ? <Tag color="blue">YES</Tag> : <Tag>NO</Tag>,
+              { title: t('tables.nullable'), dataIndex: 'is_nullable', key: 'nullable',
+                render: (v: boolean) => v ? <Tag color="blue">{t('tables.yesTag')}</Tag> : <Tag>{t('tables.noTag')}</Tag>,
               },
-              { title: 'Default', dataIndex: 'default_value', key: 'default' },
-              { title: 'Alias', key: 'alias', width: 140,
+              { title: t('tables.default'), dataIndex: 'default_value', key: 'default' },
+              { title: t('tables.alias'), key: 'alias', width: 140,
                 render: (_: unknown, record: any) => (
                   <Input
                     size="small"
@@ -286,7 +288,7 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
                   />
                 ),
               },
-              { title: 'Queryable', key: 'queryable', width: 90, align: 'center' as const,
+              { title: t('tables.queryable'), key: 'queryable', width: 90, align: 'center' as const,
                 render: (_: unknown, record: any) => (
                   <Switch
                     size="small"
@@ -295,7 +297,7 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
                   />
                 ),
               },
-              { title: 'Sort ID', key: 'sort_id', width: 90,
+              { title: t('tables.sortId'), key: 'sort_id', width: 90,
                 render: (_: unknown, record: any) => (
                   <InputNumber
                     size="small"
@@ -306,7 +308,7 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
                   />
                 ),
               },
-              { title: 'Actions', key: 'actions', width: 130,
+              { title: t('common.actions'), key: 'actions', width: 130,
                 render: (_: unknown, record: any) => (
                   <Space>
                     {dirtyMeta[record.name] && (
@@ -336,7 +338,7 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
         onDone={(nameChanged) => {
           setDrawerOpen(false);
           if (nameChanged) {
-            message.loading({ content: 'Reloading table data...', key: 'col-reload', duration: 0 });
+            message.loading({ content: t('tables.reloadingTableData'), key: 'col-reload', duration: 0 });
             setTimeout(() => message.destroy('col-reload'), 3000);
           }
           onRefresh();
@@ -344,29 +346,29 @@ export default function ColumnEditor({ schema, table, columns, onRefresh }: Prop
         }}
       />
       <Drawer
-        title={`Bulk Edit Field Metadata (${selectedRows.length} columns)`}
+        title={t('tables.bulkEditFieldMetadata', { count: selectedRows.length })}
         open={bulkOpen}
         onClose={() => setBulkOpen(false)}
         width={500}
         destroyOnClose
         extra={
           <Button type="primary" onClick={saveBulk} loading={savingBulk}>
-            Apply
+            {t('tables.apply')}
           </Button>
         }
       >
         <p style={{ marginBottom: 16, color: '#888' }}>
-          Only checked fields will be applied. Unchecked fields remain unchanged.
+          {t('tables.onlyCheckedFields')}
         </p>
         <Form form={bulkForm} layout="vertical">
-          <Form.Item label={<Checkbox checked={!!bulkEnabled.alias} onChange={(e) => setBulkEnabled((p) => ({ ...p, alias: e.target.checked }))}>Alias</Checkbox>} name="alias">
-            <Input placeholder="Alias" disabled={!bulkEnabled.alias} />
+          <Form.Item label={<Checkbox checked={!!bulkEnabled.alias} onChange={(e) => setBulkEnabled((p) => ({ ...p, alias: e.target.checked }))}>{t('tables.alias')}</Checkbox>} name="alias">
+            <Input placeholder={t('tables.alias')} disabled={!bulkEnabled.alias} />
           </Form.Item>
-          <Form.Item label={<Checkbox checked={!!bulkEnabled.queryable} onChange={(e) => setBulkEnabled((p) => ({ ...p, queryable: e.target.checked }))}>Queryable</Checkbox>} name="queryable" valuePropName="checked">
+          <Form.Item label={<Checkbox checked={!!bulkEnabled.queryable} onChange={(e) => setBulkEnabled((p) => ({ ...p, queryable: e.target.checked }))}>{t('tables.queryable')}</Checkbox>} name="queryable" valuePropName="checked">
             <Switch disabled={!bulkEnabled.queryable} />
           </Form.Item>
-          <Form.Item label={<Checkbox checked={!!bulkEnabled.sort_id} onChange={(e) => setBulkEnabled((p) => ({ ...p, sort_id: e.target.checked }))}>Sort ID</Checkbox>} name="sort_id">
-            <InputNumber style={{ width: '100%' }} placeholder="Sort ID" disabled={!bulkEnabled.sort_id} />
+          <Form.Item label={<Checkbox checked={!!bulkEnabled.sort_id} onChange={(e) => setBulkEnabled((p) => ({ ...p, sort_id: e.target.checked }))}>{t('tables.sortId')}</Checkbox>} name="sort_id">
+            <InputNumber style={{ width: '100%' }} placeholder={t('tables.sortId')} disabled={!bulkEnabled.sort_id} />
           </Form.Item>
         </Form>
       </Drawer>

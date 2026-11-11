@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Select, Segmented, Spin, Space, Typography } from 'antd';
 import { message } from '../../utils/message';
 import { getAdminClient, getErrorMessage } from '../../baas/adminClient';
@@ -15,6 +16,7 @@ interface BulkPrivilegeModalProps {
 }
 
 export default function BulkPrivilegeModal({ open, schema, tables, onClose, onApplied }: BulkPrivilegeModalProps) {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<string[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -54,8 +56,8 @@ export default function BulkPrivilegeModal({ open, schema, tables, onClose, onAp
     const failed = tables.filter((_, i) => results[i].status === 'rejected');
     const ok = tables.length - failed.length;
     setSaving(false);
-    if (ok > 0) message.success(`Privileges updated on ${ok} table${ok === 1 ? '' : 's'}`);
-    if (failed.length) message.error(`${failed.length} table${failed.length === 1 ? '' : 's'} failed: ${failed.join(', ')}`);
+    if (ok > 0) message.success(t('tables.privilegesUpdated', { count: ok }));
+    if (failed.length) message.error(t('tables.tablesFailed', { count: failed.length, names: failed.join(', ') }));
     if (ok > 0) {
       reset();
       onApplied();
@@ -63,15 +65,13 @@ export default function BulkPrivilegeModal({ open, schema, tables, onClose, onAp
     }
   };
 
-  const tableLabel = `${tables.length} table${tables.length === 1 ? '' : 's'}`;
-
   return (
     <Modal
-      title={`Edit Privileges (${tableLabel})`}
+      title={t('tables.editPrivilegesTitle', { count: tables.length })}
       open={open}
       onCancel={handleCancel}
       onOk={handleApply}
-      okText={`Apply to ${tableLabel}`}
+      okText={t('tables.applyToTables', { count: tables.length })}
       okButtonProps={{ disabled: !selectedUsers.length, loading: saving }}
       destroyOnClose
     >
@@ -80,19 +80,19 @@ export default function BulkPrivilegeModal({ open, schema, tables, onClose, onAp
       ) : (
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
           <div>
-            <Typography.Text>Users</Typography.Text>
+            <Typography.Text>{t('tables.users')}</Typography.Text>
             <Select
               mode="multiple"
               allowClear
               style={{ width: '100%' }}
-              placeholder="Select users"
+              placeholder={t('tables.selectUsers')}
               value={selectedUsers}
               onChange={setSelectedUsers}
               options={users.map((u) => ({ label: u, value: u }))}
             />
           </div>
           <div>
-            <Typography.Text>Privilege</Typography.Text>
+            <Typography.Text>{t('tables.privilege')}</Typography.Text>
             <div>
               <Segmented options={['none', 'read', 'write']} value={level} onChange={(v) => setLevel(v as Level)} />
             </div>

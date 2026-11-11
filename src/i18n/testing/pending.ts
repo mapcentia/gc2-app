@@ -18,7 +18,6 @@ export const PENDING: string[] = [
   'features/sequences',
   'features/snapshots',
   'features/sql',
-  'features/tables',
   'features/tileseeder',
   'features/users',
 ];

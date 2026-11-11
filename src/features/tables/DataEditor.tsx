@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Table, Button, Space, Alert, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { message } from '../../utils/message';
@@ -29,12 +31,12 @@ function sqlLiteral(value: unknown, colType: string): string {
   // Numeric types
   if (/^(smallint|integer|bigint|int[248]?|serial|bigserial|smallserial|oid)$/.test(t)) {
     const n = Number(value);
-    if (Number.isNaN(n)) throw new Error(`Invalid integer: ${value}`);
+    if (Number.isNaN(n)) throw new Error(i18n.t('tables.invalidInteger', { value: String(value) }));
     return String(n);
   }
   if (/^(numeric|decimal|real|float[48]?|double precision|money)$/.test(t)) {
     const n = Number(value);
-    if (Number.isNaN(n)) throw new Error(`Invalid number: ${value}`);
+    if (Number.isNaN(n)) throw new Error(i18n.t('tables.invalidNumber', { value: String(value) }));
     return String(n);
   }
 
@@ -90,8 +92,11 @@ function EditableCell({ editing, dataIndex, colType, children, ...rest }: Editab
     input = (
       <Select
         options={[
+          // i18n-ignore
           { label: 'true', value: 'true' },
+          // i18n-ignore
           { label: 'false', value: 'false' },
+          // i18n-ignore
           { label: 'NULL', value: '' },
         ]}
         style={{ width: '100%' }}
@@ -115,6 +120,7 @@ function EditableCell({ editing, dataIndex, colType, children, ...rest }: Editab
 }
 
 export default function DataEditor({ schema, table, columns, constraints }: Props) {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [data, setData] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -232,7 +238,7 @@ export default function DataEditor({ schema, table, columns, constraints }: Prop
         setClauses.push(`${qi(col.name)} = ${sqlLiteral(newVal, col.type)}`);
       }
       if (setClauses.length === 0) {
-        message.info('No changes');
+        message.info(t('tables.noChanges'));
         setEditingKey('');
         return;
       }
@@ -240,7 +246,7 @@ export default function DataEditor({ schema, table, columns, constraints }: Prop
       await getSql().exec({
         q: `UPDATE ${fqTable} SET ${setClauses.join(', ')} WHERE ${where}`,
       });
-      message.success('Row updated');
+      message.success(t('tables.rowUpdated'));
       setEditingKey('');
       fetchData();
     } catch (e: any) {
@@ -256,7 +262,7 @@ export default function DataEditor({ schema, table, columns, constraints }: Prop
         const fqTable = `${qi(schema)}.${qi(table)}`;
         const where = pkColumns.map((c) => `${qi(c)} = ${sqlLiteral(record[c], colMap.get(c)!.type)}`).join(' AND ');
         await getSql().exec({ q: `DELETE FROM ${fqTable} WHERE ${where}` });
-        message.success('Row deleted');
+        message.success(t('tables.rowDeleted'));
         fetchData();
       } catch (e: any) {
         message.error(e.message ?? String(e));
@@ -271,7 +277,7 @@ export default function DataEditor({ schema, table, columns, constraints }: Prop
       title: (
         <span>
           {col.name}
-          {pkColumns.includes(col.name) && <Typography.Text type="warning" style={{ marginLeft: 4 }}>PK</Typography.Text>}
+          {pkColumns.includes(col.name) && <Typography.Text type="warning" style={{ marginLeft: 4 }}>{/* i18n-ignore */}PK</Typography.Text>}
         </span>
       ),
       dataIndex: col.name,
@@ -284,7 +290,7 @@ export default function DataEditor({ schema, table, columns, constraints }: Prop
         editing: isEditing(record) && !readOnly,
       }),
       render: (v: unknown) => {
-        if (v === null || v === undefined) return <Typography.Text type="secondary" italic>NULL</Typography.Text>;
+        if (v === null || v === undefined) return <Typography.Text type="secondary" italic>{/* i18n-ignore */}NULL</Typography.Text>;
         if (isGeoCol(col.type)) {
           const s = String(v);
           return <Typography.Text code style={{ fontSize: 11 }}>{s.length > 30 ? s.slice(0, 30) + '...' : s}</Typography.Text>;
@@ -298,7 +304,7 @@ export default function DataEditor({ schema, table, columns, constraints }: Prop
   // Actions column
   if (hasPk) {
     tableColumns.push({
-      title: 'Actions',
+      title: t('common.actions'),
       key: '_actions',
       fixed: 'right' as const,
       width: 120,
@@ -326,7 +332,7 @@ export default function DataEditor({ schema, table, columns, constraints }: Prop
       {!hasPk && (
         <Alert
           type="warning"
-          message="This table has no primary key. Data is read-only."
+          message={t('tables.noPrimaryKey')}
           showIcon
           style={{ marginBottom: 12 }}
         />
@@ -335,13 +341,13 @@ export default function DataEditor({ schema, table, columns, constraints }: Prop
       <Space style={{ marginBottom: 12 }}>
         {hasPk && (
           <Button icon={<PlusOutlined />} onClick={() => setDrawerOpen(true)} disabled={editingKey !== ''}>
-            Add Row
+            {t('tables.addRow')}
           </Button>
         )}
         <Button icon={<ReloadOutlined />} onClick={fetchData} disabled={editingKey !== ''}>
-          Refresh
+          {t('common.refresh')}
         </Button>
-        <Typography.Text type="secondary">{total} rows total</Typography.Text>
+        <Typography.Text type="secondary">{t('tables.rowsTotal', { count: total })}</Typography.Text>
       </Space>
       <Form form={form} component={false}>
         <Table

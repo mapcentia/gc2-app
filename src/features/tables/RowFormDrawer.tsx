@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { Drawer, Form, Input, InputNumber, Select, Switch, Button, Typography } from 'antd';
 import { message } from '../../utils/message';
 import { getSql } from '../../baas/client';
@@ -27,12 +29,12 @@ function sqlLiteral(value: unknown, colType: string): string {
   }
   if (/^(smallint|integer|bigint|int[248]?|serial|bigserial|smallserial|oid)$/.test(t)) {
     const n = Number(value);
-    if (Number.isNaN(n)) throw new Error(`Invalid integer: ${value}`);
+    if (Number.isNaN(n)) throw new Error(i18n.t('tables.invalidInteger', { value: String(value) }));
     return String(n);
   }
   if (/^(numeric|decimal|real|float[48]?|double precision|money)$/.test(t)) {
     const n = Number(value);
-    if (Number.isNaN(n)) throw new Error(`Invalid number: ${value}`);
+    if (Number.isNaN(n)) throw new Error(i18n.t('tables.invalidNumber', { value: String(value) }));
     return String(n);
   }
   if (t === 'json' || t === 'jsonb') {
@@ -62,6 +64,7 @@ function isJsonType(type: string) {
 }
 
 export default function RowFormDrawer({ open, schema, table, columns, onClose, onDone }: Props) {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
 
   // Filter out columns that should be skipped entirely
@@ -90,7 +93,7 @@ export default function RowFormDrawer({ open, schema, table, columns, onClose, o
     }
 
     if (insertCols.length === 0) {
-      message.warning('No values provided');
+      message.warning(t('tables.noValuesProvided'));
       return;
     }
 
@@ -99,7 +102,7 @@ export default function RowFormDrawer({ open, schema, table, columns, onClose, o
       await getSql().exec({
         q: `INSERT INTO ${fqTable} (${insertCols.join(', ')}) VALUES (${insertVals.join(', ')})`,
       });
-      message.success('Row inserted');
+      message.success(t('tables.rowInserted'));
       form.resetFields();
       onDone();
     } catch (e: any) {
@@ -116,7 +119,11 @@ export default function RowFormDrawer({ open, schema, table, columns, onClose, o
       return <InputNumber style={{ width: '100%' }} />;
     }
     if (isJsonType(t)) {
-      return <Input.TextArea rows={3} placeholder="{}" />;
+      return <Input.TextArea
+          rows={3}
+          // i18n-ignore
+          placeholder="{}"
+        />;
     }
     if (/^(text|varchar)$/i.test(t) || t.startsWith('character')) {
       return <Input.TextArea autoSize={{ minRows: 1, maxRows: 4 }} />;
@@ -126,11 +133,11 @@ export default function RowFormDrawer({ open, schema, table, columns, onClose, o
 
   return (
     <Drawer
-      title="Add Row"
+      title={t('tables.addRow')}
       open={open}
       onClose={onClose}
       width={420}
-      extra={<Button type="primary" onClick={handleSubmit}>Save</Button>}
+      extra={<Button type="primary" onClick={handleSubmit}>{t('common.save')}</Button>}
     >
       <Form form={form} layout="vertical">
         {editableColumns.map((col: any) => (
@@ -151,7 +158,7 @@ export default function RowFormDrawer({ open, schema, table, columns, onClose, o
           </Form.Item>
         ))}
         {editableColumns.length === 0 && (
-          <Typography.Text type="secondary">No editable columns available.</Typography.Text>
+          <Typography.Text type="secondary">{t('tables.noEditableColumns')}</Typography.Text>
         )}
       </Form>
     </Drawer>

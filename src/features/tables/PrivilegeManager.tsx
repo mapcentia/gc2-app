@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Table, Segmented, Spin, Space, Button, theme } from 'antd';
 import { message } from '../../utils/message';
 import { EditOutlined } from '@ant-design/icons';
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function PrivilegeManager({ schema, table }: Props) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const [users, setUsers] = useState<any[]>([]);
   const [privData, setPrivData] = useState<Record<string, string>>({});
@@ -44,7 +46,7 @@ export default function PrivilegeManager({ schema, table }: Props) {
         privilege: privilege as 'none' | 'read' | 'write',
       });
       setPrivData((prev) => ({ ...prev, [subuser]: privilege }));
-      message.success(`Updated ${subuser} to ${privilege}`);
+      message.success(t('tables.updatedUserTo', { subuser, privilege }));
     } catch (e: unknown) {
       message.error(getErrorMessage(e));
     }
@@ -63,7 +65,7 @@ export default function PrivilegeManager({ schema, table }: Props) {
       const updated: Record<string, string> = {};
       selectedRows.forEach((name) => { updated[name] = privilege; });
       setPrivData((prev) => ({ ...prev, ...updated }));
-      message.success(`Updated ${selectedRows.length} users to ${privilege}`);
+      message.success(t('tables.updatedUsersTo', { count: selectedRows.length, privilege }));
       setSelectedRows([]);
     } catch (e: unknown) {
       message.error(getErrorMessage(e));
@@ -87,7 +89,7 @@ export default function PrivilegeManager({ schema, table }: Props) {
     <div>
       {selectedRows.length > 0 && (
         <Space style={{ marginBottom: 12 }}>
-          <span>Set {selectedRows.length} users to:</span>
+          <span>{t('tables.setUsersTo', { count: selectedRows.length })}</span>
           <Segmented
             size="small"
             options={['none', 'read', 'write']}
@@ -106,11 +108,11 @@ export default function PrivilegeManager({ schema, table }: Props) {
           onChange: (keys) => setSelectedRows(keys as string[]),
         }}
         columns={[
-          { title: 'User', dataIndex: 'name', key: 'name',
+          { title: t('tables.user'), dataIndex: 'name', key: 'name',
             sorter: (a: any, b: any) => (a.name ?? '').localeCompare(b.name ?? ''),
           },
           {
-            title: 'Privilege',
+            title: t('tables.privilege'),
             key: 'privilege',
             render: (_: unknown, record: any) => {
               const current = privData[record.name] ?? 'none';

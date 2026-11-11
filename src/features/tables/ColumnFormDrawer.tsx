@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Drawer, Form, Input, Select, Switch, Button } from 'antd';
 import { message } from '../../utils/message';
 import { getAdminClient, getErrorMessage } from '../../baas/adminClient';
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export default function ColumnFormDrawer({ open, schema, table, column, onClose, onDone }: Props) {
+  const { t } = useTranslation();
   const [form] = Form.useForm<{
     name: string;
     type: string;
@@ -60,7 +62,7 @@ export default function ColumnFormDrawer({ open, schema, table, column, onClose,
         await admin.provisioning.columns.postColumn(schema, table, body);
       }
       const nameChanged = isEdit ? raw.name !== column.name : true;
-      message.success(isEdit ? 'Column updated' : 'Column created');
+      message.success(isEdit ? t('tables.columnUpdated') : t('tables.columnCreated'));
       form.resetFields();
       onDone(nameChanged);
     } catch (e: unknown) {
@@ -69,29 +71,29 @@ export default function ColumnFormDrawer({ open, schema, table, column, onClose,
   };
 
   return (
-    <Drawer title={isEdit ? 'Edit Column' : 'Add Column'} open={open} onClose={onClose} width={400}
-      extra={<Button type="primary" onClick={handleSubmit}>Save</Button>}>
+    <Drawer title={isEdit ? t('tables.editColumn') : t('tables.addColumn')} open={open} onClose={onClose} width={400}
+      extra={<Button type="primary" onClick={handleSubmit}>{t('common.save')}</Button>}>
       <Form form={form} layout="vertical" initialValues={column ?? { is_nullable: true }}>
-        <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+        <Form.Item name="name" label={t('common.name')} rules={[{ required: true }]}>
           <Input />
         </Form.Item>
         {!isEdit && (
-          <Form.Item name="type" label="Type" rules={[{ required: true }]}>
-            <Select options={PG_TYPES.map((t) => ({ label: t, value: t }))} showSearch />
+          <Form.Item name="type" label={t('common.type')} rules={[{ required: true }]}>
+            <Select options={PG_TYPES.map((pg) => ({ label: pg, value: pg }))} showSearch />
           </Form.Item>
         )}
         {isEdit && (
-          <Form.Item name="type" label="Type">
-            <Select options={PG_TYPES.map((t) => ({ label: t, value: t }))} showSearch />
+          <Form.Item name="type" label={t('common.type')}>
+            <Select options={PG_TYPES.map((pg) => ({ label: pg, value: pg }))} showSearch />
           </Form.Item>
         )}
-        <Form.Item name="is_nullable" label="Nullable" valuePropName="checked">
+        <Form.Item name="is_nullable" label={t('tables.nullable')} valuePropName="checked">
           <Switch />
         </Form.Item>
-        <Form.Item name="default_value" label="Default Value">
+        <Form.Item name="default_value" label={t('tables.defaultValue')}>
           <Input />
         </Form.Item>
-        <Form.Item name="comment" label="Comment">
+        <Form.Item name="comment" label={t('tables.comment')}>
           <Input.TextArea rows={2} />
         </Form.Item>
       </Form>
