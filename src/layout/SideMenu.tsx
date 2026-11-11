@@ -21,8 +21,13 @@ import {
   GlobalOutlined,
   AppstoreOutlined,
   TagsOutlined,
+  ControlOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../auth/AuthProvider';
+
+/** Pages only the database owner can use (the API answers 403 SUPER_USER_ONLY to sub-users). */
+const SUPER_USER_ONLY = new Set(['/configurations']);
 
 const items = [
   { type: 'group' as const, label: 'Overview', children: [
@@ -58,6 +63,7 @@ const items = [
     { key: '/metadata', icon: <FileTextOutlined />, label: 'Metadata' },
     { key: '/import', icon: <CloudUploadOutlined />, label: 'File Import' },
     { key: '/git', icon: <BranchesOutlined />, label: 'Git Commit' },
+    { key: '/configurations', icon: <ControlOutlined />, label: 'Configurations' },
   ]},
 ];
 
@@ -77,6 +83,10 @@ export default function SideMenu() {
   const navigate = useNavigate();
   const location = useLocation();
   const lastPathBySection = useRef<Record<string, string>>({});
+  const { user } = useAuth();
+  const visibleItems = user?.superUser === true
+    ? items
+    : items.map((g) => ({ ...g, children: g.children.filter((c) => !SUPER_USER_ONLY.has(c.key)) }));
 
   useEffect(() => {
     const section = findSection(location.pathname);
@@ -93,7 +103,7 @@ export default function SideMenu() {
     <Menu
       mode="inline"
       selectedKeys={[findSection(location.pathname) ?? location.pathname]}
-      items={items}
+      items={visibleItems}
       onClick={handleClick}
       style={{ borderRight: 0 }}
     />

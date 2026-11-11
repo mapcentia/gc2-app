@@ -763,5 +763,30 @@
     "na": "I/T",
     "tableCount_one": "{{count}} table",
     "tableCount_other": "{{count}} tables"
+  },
+  "configurations": {
+    "newConfiguration": "Ny configuration",
+    "search": "Søg configurations...",
+    "description": "Beskrivelse",
+    "published": "Publiceret",
+    "publishedTooltip": "En publiceret configuration kan læses af alle via dens offentlige URL.",
+    "createTitle": "Opret configuration",
+    "editTitle": "Rediger configuration: {{name}}",
+    "created": "Configuration oprettet",
+    "updated": "Configuration opdateret",
+    "deleted": "Configuration slettet",
+    "body": "Indhold (JSON)",
+    "bodyValid": "Configuration er gyldig",
+    "bodyRequired": "Configurationen skal have indhold",
+    "bodyInvalid": "Configuration er ugyldig: {{detail}}",
+    "bodyNotObject": "Indholdet skal være et JSON-objekt eller en JSON-array",
+    "bodyEmpty": "Indholdet må ikke være tomt",
+    "formatJson": "Formater JSON",
+    "publicUrl": "Offentlig URL",
+    "publicUrlHelp": "Giv denne URL til Vidi. Den virker uden token, så længe configurationen er publiceret.",
+    "notPublishedHelp": "Publicer configurationen for at få en offentlig URL.",
+    "copyUrl": "Kopier offentlig URL",
+    "urlCopied": "URL kopieret",
+    "superUserOnly": "Kun databasens ejer kan administrere configurations."
   }
 }

@@ -763,5 +763,30 @@
     "na": "N/A",
     "tableCount_one": "{{count}} table",
     "tableCount_other": "{{count}} tables"
+  },
+  "configurations": {
+    "newConfiguration": "New configuration",
+    "search": "Search configurations...",
+    "description": "Description",
+    "published": "Published",
+    "publishedTooltip": "A published configuration can be read by anyone through its public URL.",
+    "createTitle": "Create configuration",
+    "editTitle": "Edit configuration: {{name}}",
+    "created": "Configuration created",
+    "updated": "Configuration updated",
+    "deleted": "Configuration deleted",
+    "body": "Content (JSON)",
+    "bodyValid": "Configuration is valid",
+    "bodyRequired": "The configuration needs content",
+    "bodyInvalid": "Configuration is invalid: {{detail}}",
+    "bodyNotObject": "The content must be a JSON object or array",
+    "bodyEmpty": "The content must not be empty",
+    "formatJson": "Format JSON",
+    "publicUrl": "Public URL",
+    "publicUrlHelp": "Give this URL to Vidi. It works without a token for as long as the configuration is published.",
+    "notPublishedHelp": "Publish the configuration to get a public URL.",
+    "copyUrl": "Copy public URL",
+    "urlCopied": "URL copied",
+    "superUserOnly": "Only the database owner can manage configurations."
   }
 }

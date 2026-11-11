@@ -25,6 +25,7 @@ const MapPage = lazy(() => import('./features/map/MapPage'));
 const OgcServicesPage = lazy(() => import('./features/ogc/OgcServicesPage'));
 const TileCachePage = lazy(() => import('./features/ogc/TileCachePage'));
 const KeyValuePage = lazy(() => import('./features/keyvalue/KeyValuePage'));
+const ConfigurationsPage = lazy(() => import('./features/configurations/ConfigurationsPage'));
 const SnapshotsPage = lazy(() => import('./features/snapshots/SnapshotsPage'));
 const SchedulerPage = lazy(() => import('./features/scheduler/SchedulerPage'));
 const TileSeederPage = lazy(() => import('./features/tileseeder/TileSeederPage'));
@@ -70,6 +71,7 @@ export const routes: RouteObject[] = [
       { path: 'metadata', element: <MetadataEditorPage /> },
       { path: 'import', element: <FileImportPage /> },
       { path: 'git', element: <GitCommitPage /> },
+      { path: 'configurations', element: <ConfigurationsPage /> },
       { path: 'map', element: <MapPage /> },
     ],
   },
