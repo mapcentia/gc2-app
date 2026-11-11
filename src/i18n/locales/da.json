@@ -26,8 +26,28 @@
     "selectedCount_one": "{{count}} valgt",
     "selectedCount_other": "{{count}} valgte"
   },
-  "auth": {},
-  "layout": {},
-  "components": {},
+  "auth": {
+    "authenticating": "Godkender...",
+    "authFailed": "Godkendelse mislykkedes",
+    "loginIntro": "Log ind for at administrere din GC2 (Geo Compute Cloud)-instans",
+    "loginButton": "Log ind med GC2"
+  },
+  "layout": {
+    "ai": "AI",
+    "logout": "Log ud"
+  },
+  "components": {
+    "confirmDeleteTitle": "Bekræft sletning",
+    "confirmDeleteContent": "Er du sikker på, at du vil slette \"{{name}}\"? Handlingen kan ikke fortrydes.",
+    "offline": "Du er offline – viser data fra cachen. Ændringer synkroniseres, når du er online igen.",
+    "noResults": "Ingen resultater",
+    "selectTitle": "Vælg {{title}}",
+    "addTitle": "Tilføj {{title}}",
+    "unsupportedArrayType": "Array-typen understøttes ikke",
+    "fieldRequired": "{{title}} er påkrævet",
+    "propertiesLoadError": "Kunne ikke indlæse egenskabsformularen: {{message}}",
+    "schemaPlaceholder": "Schema",
+    "tablePlaceholder": "Table"
+  },
   "agent": {}
 }

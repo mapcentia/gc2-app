@@ -1,4 +1,5 @@
 import { Select, Space } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { getStats } from '../baas/client';
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function SchemaTableSelect({ schema, table, onSchemaChange, onTableChange }: Props) {
+  const { t } = useTranslation();
   const { data: statsData } = useQuery({
     queryKey: ['db-stats'],
     queryFn: async () => await getStats().get(),
@@ -23,7 +25,7 @@ export default function SchemaTableSelect({ schema, table, onSchemaChange, onTab
   return (
     <Space>
       <Select
-        placeholder="Schema"
+        placeholder={t('components.schemaPlaceholder')}
         value={schema}
         onChange={(v) => { onSchemaChange(v); onTableChange(''); }}
         options={schemas.map((s) => ({ label: s, value: s }))}
@@ -31,7 +33,7 @@ export default function SchemaTableSelect({ schema, table, onSchemaChange, onTab
         allowClear
       />
       <Select
-        placeholder="Table"
+        placeholder={t('components.tablePlaceholder')}
         value={table || undefined}
         onChange={onTableChange}
         options={tables.map((t) => ({ label: t, value: t }))}

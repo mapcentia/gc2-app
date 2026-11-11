@@ -3,6 +3,7 @@ import { AgentChat } from '@mapcentia/gc2-agent-ui';
 import '@mapcentia/gc2-agent-ui/styles.css';
 import { queryClient } from '../data/queryClient';
 import { bumpWmsRefresh } from '../features/map/mapStore';
+import { lang } from '../i18n';
 import { useTheme } from '../theme/ThemeProvider';
 import { agentStore, closeAgent, useAgentStore } from './agentStore';
 import { getAgentContext } from './agentContext';
@@ -23,6 +24,7 @@ export default function AgentDrawer() {
 
   return (
     <Drawer
+      // i18n-ignore
       title="GC2 AI"
       placement="right"
       width={480}
@@ -44,7 +46,7 @@ export default function AgentDrawer() {
             queryClient.invalidateQueries();
             if (LAYER_TOOL.test(name)) bumpWmsRefresh();
           }}
-          locale="en"
+          locale={lang}
         />
       </div>
     </Drawer>

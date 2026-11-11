@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Table, Segmented, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   data: Record<string, unknown>[] | null;
@@ -7,10 +8,11 @@ interface Props {
 }
 
 export default function ResultTable({ data, schema }: Props) {
+  const { t } = useTranslation();
   const [view, setView] = useState<'table' | 'json'>('table');
 
   if (!data || data.length === 0) {
-    return <Typography.Text type="secondary">No results</Typography.Text>;
+    return <Typography.Text type="secondary">{t('components.noResults')}</Typography.Text>;
   }
 
   const columns = Object.keys(data[0]).map((key) => ({
@@ -18,6 +20,7 @@ export default function ResultTable({ data, schema }: Props) {
     dataIndex: key,
     key,
     ellipsis: true,
+    // i18n-ignore
     render: (v: unknown) => (v === null ? <i>NULL</i> : typeof v === 'object' ? JSON.stringify(v) : String(v)),
   }));
 

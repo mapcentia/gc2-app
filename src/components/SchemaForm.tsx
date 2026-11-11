@@ -1,6 +1,8 @@
 import { Fragment } from 'react';
 import { Form, Input, InputNumber, Switch, Select, Checkbox, Typography, Divider } from 'antd';
 import type { FormInstance } from 'antd';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 const { Text } = Typography;
 
@@ -54,7 +56,7 @@ function renderField(key: string, prop: PropertySchema, disabled: boolean) {
       <Select
         allowClear
         disabled={disabled}
-        placeholder={`Select ${prop.title ?? key}`}
+        placeholder={i18n.t('components.selectTitle', { title: prop.title ?? key })}
         options={enumOptions(prop)}
       />
     );
@@ -88,9 +90,9 @@ function renderField(key: string, prop: PropertySchema, disabled: boolean) {
 
     case 'array':
       if (prop.items?.type === 'string') {
-        return <Select mode="tags" disabled={disabled} placeholder={`Add ${prop.title ?? key}`} />;
+        return <Select mode="tags" disabled={disabled} placeholder={i18n.t('components.addTitle', { title: prop.title ?? key })} />;
       }
-      return <Input disabled={disabled} placeholder="Unsupported array type" />;
+      return <Input disabled={disabled} placeholder={i18n.t('components.unsupportedArrayType')} />;
 
     default:
       return <Input disabled={disabled} placeholder={prop.title ?? key} />;
@@ -104,6 +106,7 @@ export default function SchemaForm({
   enabledFields,
   onEnabledChange,
 }: SchemaFormProps) {
+  const { t } = useTranslation();
   const entries = Object.entries(schema.properties);
   const required = new Set(schema.required ?? []);
   const isBulkMode = !!enabledFields && !!onEnabledChange;
@@ -149,7 +152,7 @@ export default function SchemaForm({
               })}
               rules={
                 !isBulkMode && required.has(key)
-                  ? [{ required: true, message: `${prop.title ?? key} is required` }]
+                  ? [{ required: true, message: t('components.fieldRequired', { title: prop.title ?? key }) }]
                   : undefined
               }
               help={prop.description ? <Text type="secondary" style={{ fontSize: 12 }}>{prop.description}</Text> : undefined}

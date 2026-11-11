@@ -26,8 +26,28 @@
     "selectedCount_one": "{{count}} selected",
     "selectedCount_other": "{{count}} selected"
   },
-  "auth": {},
-  "layout": {},
-  "components": {},
+  "auth": {
+    "authenticating": "Authenticating...",
+    "authFailed": "Authentication failed",
+    "loginIntro": "Log in to manage your GC2 (Geo Compute Cloud) instance",
+    "loginButton": "Login with GC2"
+  },
+  "layout": {
+    "ai": "AI",
+    "logout": "Logout"
+  },
+  "components": {
+    "confirmDeleteTitle": "Confirm Deletion",
+    "confirmDeleteContent": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+    "offline": "You are offline — showing cached data. Changes will sync when you reconnect.",
+    "noResults": "No results",
+    "selectTitle": "Select {{title}}",
+    "addTitle": "Add {{title}}",
+    "unsupportedArrayType": "Unsupported array type",
+    "fieldRequired": "{{title}} is required",
+    "propertiesLoadError": "Could not load the properties form: {{message}}",
+    "schemaPlaceholder": "Schema",
+    "tablePlaceholder": "Table"
+  },
   "agent": {}
 }

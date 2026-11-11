@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Button, Space, Typography, Segmented } from 'antd';
 import { LogoutOutlined, SunOutlined, MoonOutlined, DesktopOutlined, RobotOutlined } from '@ant-design/icons';
 import { useAuth } from '../auth/AuthProvider';
@@ -13,6 +14,7 @@ const themeOptions = [
 ];
 
 export default function HeaderBar() {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const { mode, setMode } = useTheme();
   const db = (user?.database as string) ?? '';
@@ -20,7 +22,7 @@ export default function HeaderBar() {
   return (
     <Space style={{ float: 'right' }}>
       <Button size="small" type="primary" ghost icon={<RobotOutlined />} onClick={openAgent}>
-        AI
+        {t('layout.ai')}
       </Button>
       <Segmented
         size="small"
@@ -30,7 +32,7 @@ export default function HeaderBar() {
       />
       {db && <Typography.Text type="secondary">{db}</Typography.Text>}
       <Button size="small" icon={<LogoutOutlined />} onClick={signOut}>
-        Logout
+        {t('layout.logout')}
       </Button>
     </Space>
   );

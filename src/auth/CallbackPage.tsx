@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Spin, Flex } from 'antd';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { getCodeFlow } from '../baas/client';
 
 export default function CallbackPage() {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,7 +21,7 @@ export default function CallbackPage() {
           sessionStorage.removeItem('centia_auto_login_attempted');
           window.location.replace(import.meta.env.VITE_BASE_PATH || '/');
         } else {
-          setError('Authentication failed');
+          setError(i18n.t('auth.authFailed'));
         }
       })
       .catch((err: unknown) => setError(String(err)));
@@ -28,7 +31,7 @@ export default function CallbackPage() {
 
   return (
     <Flex justify="center" align="center" style={{ minHeight: '100vh' }}>
-      <Spin size="large" tip="Authenticating..." />
+      <Spin size="large" tip={t('auth.authenticating')} />
     </Flex>
   );
 }

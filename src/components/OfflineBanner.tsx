@@ -1,4 +1,5 @@
 import { Alert } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { WifiOutlined } from '@ant-design/icons';
 import { useOnlineStatus } from '../data/useOnlineStatus';
 import { CLIENT_FIRST_ENABLED } from '../data/featureFlags';
@@ -8,6 +9,7 @@ import { CLIENT_FIRST_ENABLED } from '../data/featureFlags';
  * Only renders when client-first mode is enabled (otherwise stale cache isn't relevant).
  */
 export default function OfflineBanner() {
+  const { t } = useTranslation();
   const online = useOnlineStatus();
 
   if (!CLIENT_FIRST_ENABLED || online) return null;
@@ -17,7 +19,7 @@ export default function OfflineBanner() {
       type="warning"
       banner
       icon={<WifiOutlined />}
-      message="You are offline — showing cached data. Changes will sync when you reconnect."
+      message={t('components.offline')}
       style={{ position: 'sticky', top: 0, zIndex: 1000 }}
     />
   );
