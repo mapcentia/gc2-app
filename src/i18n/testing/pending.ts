@@ -7,7 +7,6 @@ export const PENDING: string[] = [
   'features/graphql',
   'features/import',
   'features/keyvalue',
-  'features/map',
   'features/metadata',
   'features/ogc',
   'features/realtime',

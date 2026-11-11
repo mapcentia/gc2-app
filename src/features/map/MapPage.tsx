@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatNumber } from '../../i18n';
 import { Spin, Alert, Switch, Typography, Select, Segmented, Button, Tooltip, Modal, Radio, Space } from 'antd';
 import { BgColorsOutlined, ClearOutlined, SaveOutlined, WarningOutlined } from '@ant-design/icons';
 import maplibregl from 'maplibre-gl';
@@ -99,6 +101,7 @@ function mapLayerIds(gt: GeoTable) {
 type TileMode = 'tiles' | 'mvt';
 
 export default function MapPage() {
+  const { t } = useTranslation();
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -529,6 +532,7 @@ export default function MapPage() {
 
   useEffect(() => {
     setAgentPageContext('map', {
+      // i18n-ignore
       description: 'Map page: schema and active layers with render modes',
       schema: selectedSchema,
       activeLayers: activeLayers.map((l) => ({
@@ -612,14 +616,18 @@ export default function MapPage() {
       const wiped = results.filter((r): r is MapcacheTilesetWipeCompleted => 'removed' in r);
       // Only sqlite reports a tile count; bdb/disk report 1/0 for "the cache existed".
       if (wiped.length < results.length) {
-        message.success('Tile cache clearing started');
+        message.success(t('map.tileCacheStarted'));
       } else if (wiped.every((r) => r.backend === 'sqlite')) {
         const [png, mvt] = wiped.map((r) => r.removed);
         message.success(
-          `Tile cache deleted: ${(png + mvt).toLocaleString()} tiles removed (${png.toLocaleString()} image, ${mvt.toLocaleString()} vector)`,
+          t('map.tileCacheDeletedCount', {
+            total: formatNumber(png + mvt),
+            image: formatNumber(png),
+            vector: formatNumber(mvt),
+          }),
         );
       } else {
-        message.success('Tile cache deleted');
+        message.success(t('map.tileCacheDeleted'));
       }
       setClearCacheTarget(null);
     } catch (e) {
@@ -627,7 +635,7 @@ export default function MapPage() {
     } finally {
       setClearing(false);
     }
-  }, [clearCacheTarget, clearScope, database]);
+  }, [clearCacheTarget, clearScope, database, t]);
 
   const handleSchemaChange = useCallback(
     (schema: string) => {
@@ -650,11 +658,11 @@ export default function MapPage() {
         zoom: map.getZoom(),
         extent: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()],
       });
-      message.success(`Start view saved for "${schema}"`);
+      message.success(t('map.startViewSaved', { schema }));
     } catch (e) {
       message.error(getErrorMessage(e));
     }
-  }, []);
+  }, [t]);
 
   const schemas = schemaNames.map((s) => s.name).sort();
 
@@ -674,7 +682,7 @@ export default function MapPage() {
         }}
       >
         <div style={{ padding: '0 16px 12px' }}>
-          <Text strong style={{ fontSize: 16 }}>Layers</Text>
+          <Text strong style={{ fontSize: 16 }}>{t('map.layers')}</Text>
         </div>
 
         {loading && (
@@ -690,14 +698,14 @@ export default function MapPage() {
           <>
             <div style={{ display: 'flex', gap: 8, padding: '0 16px 12px' }}>
               <Select
-                placeholder="Select schema"
+                placeholder={t('map.selectSchema')}
                 showSearch
                 value={selectedSchema}
                 onChange={handleSchemaChange}
                 style={{ flex: 1 }}
                 options={schemas.map((s) => ({ label: s, value: s }))}
               />
-              <Tooltip title="Save current view as this schema's start view">
+              <Tooltip title={t('map.saveStartView')}>
                 <Button
                   icon={<SaveOutlined />}
                   disabled={!selectedSchema || !mapReady}
@@ -708,7 +716,7 @@ export default function MapPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 16px' }}>
               {selectedSchema && !tablesLoading && !tablesError && visibleTables.length === 0 && (
-                <Text type="secondary">No tables with geometry columns in this schema.</Text>
+                <Text type="secondary">{t('map.noGeoTables')}</Text>
               )}
               {visibleTables.map((gt) => {
                 const sid = sourceId(gt);
@@ -725,7 +733,7 @@ export default function MapPage() {
                           <WarningOutlined style={{ color: '#faad14', marginRight: 4 }} />
                         </Tooltip>
                       )}
-                      <Tooltip title="Edit WMS styling">
+                      <Tooltip title={t('map.editWmsStyling')}>
                         <Button
                           size="small"
                           type="text"
@@ -733,7 +741,7 @@ export default function MapPage() {
                           onClick={() => openStyleEditor(gt)}
                         />
                       </Tooltip>
-                      <Tooltip title="Clear tile cache">
+                      <Tooltip title={t('map.clearTileCache')}>
                         <Button
                           size="small"
                           type="text"
@@ -758,9 +766,13 @@ export default function MapPage() {
                         block
                         value={al.renderMode}
                         options={[
+                          // i18n-ignore
                           { label: 'GeoJSON', value: 'geojson' },
+                          // i18n-ignore
                           { label: 'WMS', value: 'wms' },
+                          // i18n-ignore
                           { label: 'Tiles', value: 'tiles' },
+                          // i18n-ignore
                           { label: 'MVT', value: 'mvt' },
                         ]}
                         onChange={(v) => handleModeChange(al, v as RenderMode)}
@@ -781,24 +793,23 @@ export default function MapPage() {
       <Modal
         title={
           clearCacheTarget
-            ? `Clear tile cache: ${clearCacheTarget.schema}.${clearCacheTarget.table}`
-            : 'Clear tile cache'
+            ? t('map.clearTileCacheFor', { layer: `${clearCacheTarget.schema}.${clearCacheTarget.table}` })
+            : t('map.clearTileCache')
         }
         open={!!clearCacheTarget}
         onOk={clearTileCache}
-        okText="Clear cache"
+        okText={t('map.clearCache')}
         confirmLoading={clearing}
         onCancel={() => setClearCacheTarget(null)}
       >
         <Space direction="vertical" size="middle">
           <Text type="secondary">
-            Cached tiles (both image and vector) are deleted on the server — immediately or in a
-            background job, depending on the cache backend — and regenerated on demand.
+            {t('map.clearCacheDescription')}
           </Text>
           <Radio.Group value={clearScope} onChange={(e) => setClearScope(e.target.value)}>
             <Space direction="vertical">
-              <Radio value="all">Entire tileset</Radio>
-              <Radio value="viewport">Only the current map view</Radio>
+              <Radio value="all">{t('map.scopeAll')}</Radio>
+              <Radio value="viewport">{t('map.scopeViewport')}</Radio>
             </Space>
           </Radio.Group>
         </Space>

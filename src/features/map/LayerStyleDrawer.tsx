@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Button, Collapse, Drawer, Space, Spin } from 'antd';
 import type { Layer } from '@mapcentia/gc2-sdk';
 import { message } from '../../utils/message';
@@ -10,6 +11,7 @@ import { FieldGrid, LAYER_PROP_GROUPS } from './fieldDefs';
 import ClassesEditor from './ClassesEditor';
 
 export default function LayerStyleDrawer() {
+  const { t } = useTranslation();
   const { styleEditorLayer } = useMapStore();
   const key = styleEditorLayer ? layerKeyOf(styleEditorLayer) : null;
   const { data, isLoading, error } = useLayer(key);
@@ -43,9 +45,9 @@ export default function LayerStyleDrawer() {
   const close = () => {
     if (dirty) {
       modal.confirm({
-        title: 'Discard changes?',
-        content: 'Unsaved styling changes will be lost.',
-        okText: 'Discard',
+        title: t('map.discardTitle'),
+        content: t('map.discardContent'),
+        okText: t('map.discard'),
         onOk: closeStyleEditor,
       });
     } else {
@@ -58,7 +60,7 @@ export default function LayerStyleDrawer() {
     try {
       await saveLayer.mutateAsync(draft);
       markDirty(false);
-      message.success('Layer styling saved');
+      message.success(t('map.stylingSaved'));
       bumpWmsRefresh();
     } catch (e) {
       message.error(getErrorMessage(e));
@@ -68,7 +70,9 @@ export default function LayerStyleDrawer() {
   return (
     <Drawer
       title={
-        styleEditorLayer ? `Style: ${styleEditorLayer.schema}.${styleEditorLayer.table}` : 'Style'
+        styleEditorLayer
+          ? t('map.styleTitle', { layer: `${styleEditorLayer.schema}.${styleEditorLayer.table}` })
+          : t('map.style')
       }
       open={!!styleEditorLayer}
       onClose={close}
@@ -76,9 +80,9 @@ export default function LayerStyleDrawer() {
       width={440}
       extra={
         <Space>
-          <Button onClick={close}>Cancel</Button>
+          <Button onClick={close}>{t('common.cancel')}</Button>
           <Button type="primary" loading={saveLayer.isPending} disabled={!dirty} onClick={save}>
-            Save
+            {t('common.save')}
           </Button>
         </Space>
       }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Popconfirm, Space, Tabs, theme, Typography } from 'antd';
 import { CopyOutlined, DeleteOutlined, DownOutlined, HolderOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -79,14 +80,15 @@ function SortableCard({
 function EntityList<T extends { id?: string; name?: string; sortid?: number }>({
   items,
   fields,
-  itemLabel,
+  kind,
   onChange,
 }: {
   items: T[];
   fields: FieldDef[];
-  itemLabel: string;
+  kind: 'style' | 'label';
   onChange: (items: T[]) => void;
 }) {
+  const { t } = useTranslation();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -113,12 +115,12 @@ function EntityList<T extends { id?: string; name?: string; sortid?: number }>({
                 <SortableCard
                   key={key}
                   id={key}
-                  title={it.name || `${itemLabel} ${i + 1}`}
+                  title={it.name || (kind === 'style' ? t('map.styleN', { n: i + 1 }) : t('map.labelN', { n: i + 1 }))}
                   expanded={expanded === key}
                   onToggle={() => setExpanded(expanded === key ? null : key)}
                   actions={
                     <Popconfirm
-                      title={`Delete this ${itemLabel.toLowerCase()}?`}
+                      title={kind === 'style' ? t('map.deleteStyle') : t('map.deleteLabel')}
                       onConfirm={() => onChange(items.filter((_, j) => j !== i))}
                     >
                       <Button size="small" type="text" icon={<DeleteOutlined />} />
@@ -141,7 +143,7 @@ function EntityList<T extends { id?: string; name?: string; sortid?: number }>({
         icon={<PlusOutlined />}
         onClick={() => onChange([...items, { sortid: (items.length + 1) * 10 } as T])}
       >
-        Add {itemLabel.toLowerCase()}
+        {kind === 'style' ? t('map.addStyle') : t('map.addLabel')}
       </Button>
     </Space>
   );
@@ -166,16 +168,17 @@ function SortableClassItem({
   onDelete: () => void;
   onDuplicate: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <SortableCard
       id={id}
-      title={cls.name || `Class ${index + 1}`}
+      title={cls.name || t('map.classN', { n: index + 1 })}
       expanded={expanded}
       onToggle={onToggle}
       actions={
         <>
           <Button size="small" type="text" icon={<CopyOutlined />} onClick={onDuplicate} />
-          <Popconfirm title="Delete this class?" onConfirm={onDelete}>
+          <Popconfirm title={t('map.deleteClass')} onConfirm={onDelete}>
             <Button size="small" type="text" icon={<DeleteOutlined />} />
           </Popconfirm>
         </>
@@ -192,24 +195,24 @@ function SortableClassItem({
         items={[
           {
             key: 'styles',
-            label: `Styles (${cls.styles?.length ?? 0})`,
+            label: t('map.stylesTab', { n: cls.styles?.length ?? 0 }),
             children: (
               <EntityList<Style>
                 items={cls.styles ?? []}
                 fields={STYLE_FIELDS}
-                itemLabel="Style"
+                kind="style"
                 onChange={(styles) => onUpdate({ styles })}
               />
             ),
           },
           {
             key: 'labels',
-            label: `Labels (${cls.labels?.length ?? 0})`,
+            label: t('map.labelsTab', { n: cls.labels?.length ?? 0 }),
             children: (
               <EntityList<Label>
                 items={cls.labels ?? []}
                 fields={LABEL_FIELDS}
-                itemLabel="Label"
+                kind="label"
                 onChange={(labels) => onUpdate({ labels })}
               />
             ),
@@ -227,6 +230,7 @@ export default function ClassesEditor({
   classes: LayerClass[];
   onChange: (classes: LayerClass[]) => void;
 }) {
+  const { t } = useTranslation();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -245,7 +249,7 @@ export default function ClassesEditor({
   const addClass = () => {
     onChange([
       ...classes,
-      { name: `Class ${classes.length + 1}`, sortid: (classes.length + 1) * 10, styles: [], labels: [] },
+      { name: t('map.classN', { n: classes.length + 1 }), sortid: (classes.length + 1) * 10, styles: [], labels: [] },
     ]);
   };
 
@@ -255,7 +259,7 @@ export default function ClassesEditor({
       ...classes,
       {
         ...structuredClone(rest),
-        name: `${classes[i].name ?? 'Class'} (copy)`,
+        name: t('map.classCopy', { name: classes[i].name ?? t('map.class') }),
         sortid: (classes.length + 1) * 10,
         styles: (classes[i].styles ?? []).map(({ id: _sid, ...s }) => structuredClone(s)),
         labels: (classes[i].labels ?? []).map(({ id: _lid, ...l }) => structuredClone(l)),
@@ -265,7 +269,7 @@ export default function ClassesEditor({
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
-      <Typography.Text strong>Classes</Typography.Text>
+      <Typography.Text strong>{t('map.classes')}</Typography.Text>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={classes.map(keyOf)} strategy={verticalListSortingStrategy}>
           <Space direction="vertical" style={{ width: '100%' }} size={4}>
@@ -289,7 +293,7 @@ export default function ClassesEditor({
         </SortableContext>
       </DndContext>
       <Button size="small" icon={<PlusOutlined />} onClick={addClass}>
-        Add class
+        {t('map.addClass')}
       </Button>
     </Space>
   );

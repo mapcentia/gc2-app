@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import i18n from '../../i18n';
 import { ColorPicker, Input, InputNumber, Select, Switch, Typography } from 'antd';
 
 export interface FieldDef {
@@ -168,7 +169,7 @@ export const CLASS_FIELDS: FieldDef[] = [
 
 export const LAYER_PROP_GROUPS: { title: string; fields: FieldDef[] }[] = [
   {
-    title: 'Rendering',
+    title: i18n.t('map.groupRendering'),
     fields: [
       { key: 'opacity', label: 'Opacity (0-100)', input: 'number' },
       {
@@ -188,7 +189,7 @@ export const LAYER_PROP_GROUPS: { title: string; fields: FieldDef[] }[] = [
     ],
   },
   {
-    title: 'Scale limits',
+    title: i18n.t('map.groupScaleLimits'),
     fields: [
       { key: 'minscaledenom', label: 'Min scale denom', input: 'number' },
       { key: 'maxscaledenom', label: 'Max scale denom', input: 'number' },
@@ -196,7 +197,7 @@ export const LAYER_PROP_GROUPS: { title: string; fields: FieldDef[] }[] = [
     ],
   },
   {
-    title: 'Labels',
+    title: i18n.t('map.groupLabels'),
     fields: [
       { key: 'label_column', label: 'Label column', input: 'text' },
       { key: 'label_min_scale', label: 'Label min scale', input: 'number' },
@@ -205,14 +206,14 @@ export const LAYER_PROP_GROUPS: { title: string; fields: FieldDef[] }[] = [
     ],
   },
   {
-    title: 'Theming & clustering',
+    title: i18n.t('map.groupTheming'),
     fields: [
       { key: 'theme_column', label: 'Theme column', input: 'text' },
       { key: 'cluster', label: 'Cluster distance', input: 'number' },
     ],
   },
   {
-    title: 'Caching & advanced',
+    title: i18n.t('map.groupCaching'),
     fields: [
       { key: 'meta_tiles', label: 'Meta tiles', input: 'number' },
       { key: 'meta_buffer', label: 'Meta buffer', input: 'number' },

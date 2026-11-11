@@ -1,4 +1,5 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
+import i18n from '../../i18n';
 
 /** WMS layer name for a geometry table. Single source of truth for the GetMap LAYERS param. */
 export function wmsLayerName(gt: { schema: string; table: string }): string {
@@ -97,7 +98,7 @@ export async function fetchWmsImage(opts: {
   if (!res.ok || !contentType.startsWith('image/')) {
     const text = await res.text();
     const m = text.match(/<ServiceException[^>]*>([\s\S]*?)<\/ServiceException>/);
-    throw new Error(m ? m[1].trim() : `WMS request failed (${res.status})`);
+    throw new Error(m ? m[1].trim() : i18n.t('map.wmsRequestFailed', { status: res.status }));
   }
   return URL.createObjectURL(await res.blob());
 }
