@@ -9,6 +9,7 @@ import OfflineBanner from './components/OfflineBanner';
 import { ThemeProvider, useTheme } from './theme/ThemeProvider';
 import { setMessageInstance } from './utils/message';
 import { setModalInstance } from './utils/modal';
+import { antdLocale } from './i18n';
 
 // Initialize IndexedDB persistence if VITE_CLIENT_FIRST_PERSIST=true
 initPersistence();
@@ -34,6 +35,7 @@ function ThemedApp() {
   const { resolved } = useTheme();
   return (
     <ConfigProvider
+      locale={antdLocale}
       theme={{
         algorithm: resolved === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: { colorPrimary: '#1677ff' },

@@ -1,0 +1,33 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "edit": "Edit",
+    "add": "Add",
+    "remove": "Remove",
+    "close": "Close",
+    "refresh": "Refresh",
+    "search": "Search",
+    "name": "Name",
+    "description": "Description",
+    "actions": "Actions",
+    "type": "Type",
+    "status": "Status",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "loading": "Loading…",
+    "areYouSure": "Are you sure?",
+    "copy": "Copy",
+    "copied": "Copied",
+    "errorWithMessage": "Error: {{message}}",
+    "selectedCount_one": "{{count}} selected",
+    "selectedCount_other": "{{count}} selected"
+  },
+  "auth": {},
+  "layout": {},
+  "components": {},
+  "agent": {}
+}

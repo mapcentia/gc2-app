@@ -1,0 +1,33 @@
+{
+  "common": {
+    "save": "Gem",
+    "cancel": "Annuller",
+    "delete": "Slet",
+    "create": "Opret",
+    "edit": "Rediger",
+    "add": "Tilføj",
+    "remove": "Fjern",
+    "close": "Luk",
+    "refresh": "Opdater",
+    "search": "Søg",
+    "name": "Navn",
+    "description": "Beskrivelse",
+    "actions": "Handlinger",
+    "type": "Type",
+    "status": "Status",
+    "yes": "Ja",
+    "no": "Nej",
+    "ok": "OK",
+    "loading": "Indlæser…",
+    "areYouSure": "Er du sikker?",
+    "copy": "Kopiér",
+    "copied": "Kopieret",
+    "errorWithMessage": "Fejl: {{message}}",
+    "selectedCount_one": "{{count}} valgt",
+    "selectedCount_other": "{{count}} valgte"
+  },
+  "auth": {},
+  "layout": {},
+  "components": {},
+  "agent": {}
+}
