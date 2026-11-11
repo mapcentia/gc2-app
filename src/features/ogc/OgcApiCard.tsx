@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Alert, Card, Select, Space, Tag, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { Ogc } from '@mapcentia/gc2-sdk';
@@ -20,6 +21,7 @@ export default function OgcApiCard({
   database: string;
   schema: string | null;
 }) {
+  const { t } = useTranslation();
   const [collectionId, setCollectionId] = useState<string | null>(null);
 
   const db = database ? encodeURIComponent(database) : '{database}';
@@ -41,27 +43,28 @@ export default function OgcApiCard({
   const isVector = selected?.itemType === 'feature';
 
   return (
-    <Card title="OGC API (Features & Maps)" extra={<Text type="secondary">Read-only</Text>} size="small">
+    <Card title={t('ogc.apiCardTitle')} extra={<Text type="secondary">{t('ogc.readOnly')}</Text>} size="small">
       <Space direction="vertical" style={{ width: '100%' }}>
-        <UrlField label="Landing page" url={base} openUrl={base} />
-        <UrlField label="Conformance" url={`${base}/conformance`} openUrl={`${base}/conformance`} />
-        <UrlField label="Collections" url={`${base}/collections`} openUrl={`${base}/collections`} />
+        <UrlField label={t('ogc.landingPage')} url={base} openUrl={base} />
+        <UrlField label={t('ogc.conformance')} url={`${base}/conformance`} openUrl={`${base}/conformance`} />
+        <UrlField label={t('ogc.collections')} url={`${base}/collections`} openUrl={`${base}/collections`} />
 
         {error ? (
           <Alert
             type="warning"
             showIcon
-            message={`Could not list collections: ${getErrorMessage(error)}`}
+            message={t('ogc.listCollectionsFailed', { message: getErrorMessage(error) })}
           />
         ) : (
           <Select
-            placeholder="Select collection (OWS-enabled layer)"
+            placeholder={t('ogc.selectCollection')}
             style={{ width: 360 }}
             allowClear
             showSearch
             value={collectionId}
             onChange={(v) => setCollectionId(v ?? null)}
             options={visible.map((c) => ({
+              // i18n-ignore
               label: c.title && c.title !== c.id ? `${c.id} — ${c.title}` : c.id,
               value: c.id,
             }))}
@@ -71,34 +74,34 @@ export default function OgcApiCard({
         {selected && (
           <>
             <UrlField
-              label="Collection"
+              label={t('ogc.collection')}
               url={`${base}/collections/${encodeURIComponent(selected.id)}`}
               openUrl={`${base}/collections/${encodeURIComponent(selected.id)}`}
             />
             {isVector ? (
               <UrlField
-                label="Items (GeoJSON — page size 10 by default; limit, offset, bbox, crs)"
+                label={t('ogc.itemsLabel')}
                 url={`${base}/collections/${encodeURIComponent(selected.id)}/items`}
                 openUrl={`${base}/collections/${encodeURIComponent(selected.id)}/items`}
               />
             ) : (
-              <Text type="secondary">Raster layer — no items endpoint, map only.</Text>
+              <Text type="secondary">{t('ogc.rasterNoItems')}</Text>
             )}
             <UrlField
-              label="Map (PNG by default; f=jpeg, bbox, width, height)"
+              label={t('ogc.mapLabel')}
               url={`${base}/collections/${encodeURIComponent(selected.id)}/map`}
               openUrl={`${base}/collections/${encodeURIComponent(selected.id)}/map`}
             />
             {selected.crs && selected.crs.length > 0 && (
               <div>
-                <Text type="secondary">CRS: </Text>
+                <Text type="secondary">{t('ogc.crsPrefix')}</Text>
                 <Space size={4} wrap>
                   {selected.crs.map((uri) => (
                     <Tag key={uri}>
                       {uri === CRS84
-                        ? 'CRS84 (default, lon/lat)'
+                        ? t('ogc.crs84')
                         : uri === EPSG_4326
-                          ? 'EPSG:4326 (lat/lon)'
+                          ? t('ogc.epsg4326')
                           : uri.replace('http://www.opengis.net/def/crs/EPSG/0/', 'EPSG:')}
                     </Tag>
                   ))}
@@ -112,20 +115,14 @@ export default function OgcApiCard({
           type="info"
           showIcon
           message={
-            <>
-              Standards-based read-only access to OWS-enabled layers: features as GeoJSON
-              (OGC API Features Part 1 + 2) and rendered map images (OGC API Maps Part 1).
-              Pass <Text code>crs</Text>/<Text code>bbox-crs</Text> as full CRS URIs from the
-              collection&apos;s list; versioned layers accept{' '}
-              <Text code>datetime=&lt;ISO instant&gt;</Text>. Anonymously readable layers need
-              no credentials; protected layers return 401 (anonymous) or 403 (no privilege) —
-              send HTTP Basic or an <Text code>Authorization: Bearer</Text> header matching the
-              database. API description:{' '}
-              <a href={`${host}/swagger/api.php?v=4`} target="_blank" rel="noreferrer">
-                OpenAPI
-              </a>
-              .
-            </>
+            <Trans
+              i18nKey="ogc.apiHelp"
+              values={{ isoInstant: t('ogc.isoInstant') }}
+              components={{
+                code: <Text code />,
+                a: <a href={`${host}/swagger/api.php?v=4`} target="_blank" rel="noreferrer" />,
+              }}
+            />
           }
         />
       </Space>

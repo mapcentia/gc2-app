@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   Alert, Button, Card, Checkbox, Descriptions, Drawer, Form, Input, InputNumber, Popconfirm,
   Select, Slider, Space, Table, Tag, Tooltip, Typography,
@@ -11,6 +12,7 @@ import { message } from '../../utils/message';
 import { getAdminClient, getApiErrorCode, getErrorMessage } from '../../baas/adminClient';
 import { useAuth } from '../../auth/AuthProvider';
 import { queryClient } from '../../data/queryClient';
+import { formatNumber } from '../../i18n';
 import { useSchemaNames } from '../../hooks/useSchemaNames';
 import { useGeoTables } from '../map/geoTables';
 import {
@@ -53,13 +55,14 @@ function crsLabel(crs: string | null | undefined): string | null {
 }
 
 function JobStatus({ job }: { job: SeedJob }) {
+  const { t } = useTranslation();
   if (!job.status) return <Text type="secondary">—</Text>;
   return (
     <Space size={4}>
       <Tag color={STATUS_COLOR[job.status]} style={{ margin: 0 }}>{job.status}</Tag>
       {job.stale && (
-        <Tooltip title="Running, but no heartbeat for 10 minutes: the run or its node is gone.">
-          <Tag color="orange" style={{ margin: 0 }}>stale</Tag>
+        <Tooltip title={t('tileseeder.staleTip')}>
+          <Tag color="orange" style={{ margin: 0 }}>{t('tileseeder.stale')}</Tag>
         </Tooltip>
       )}
     </Space>
@@ -84,6 +87,7 @@ function errorText(e: unknown): string {
 }
 
 export default function TileSeederPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const database = (user?.database as string) ?? '';
   const [form] = Form.useForm();
@@ -106,7 +110,7 @@ export default function TileSeederPage() {
   const { data: schemaNames = [], isLoading: schemasLoading } = useSchemaNames();
   const { geoTables: extentTables, isLoading: extentTablesLoading } = useGeoTables(extentSchema);
 
-  const tileset = caps.data?.tilesets.find((t) => t.id === tilesetId);
+  const tileset = caps.data?.tilesets.find((ts) => ts.id === tilesetId);
   const grid = gridId ? caps.data?.grids[gridId] : undefined;
   const minZoom = grid?.levels[0] ?? 0;
   const maxZoom = grid?.levels[grid.levels.length - 1] ?? 0;
@@ -148,28 +152,32 @@ export default function TileSeederPage() {
   // Tilesets are "schema.layer" (vector variants "schema.layer.mvt"/".json"),
   // plus one per schema named just "schema" (and "schema.mvt") covering all its layers.
   const visibleTilesets = useMemo(
-    () => (caps.data?.tilesets ?? []).filter((t) => tileKinds.includes(t.kind)),
+    () => (caps.data?.tilesets ?? []).filter((ts) => tileKinds.includes(ts.kind)),
     [caps.data, tileKinds],
   );
   const tilesetSchemas = useMemo(
-    () => [...new Set(visibleTilesets.map((t) => t.id.split('.')[0]))].sort(),
+    () => [...new Set(visibleTilesets.map((ts) => ts.id.split('.')[0]))].sort(),
     [visibleTilesets],
   );
   const tilesetLayerOptions = useMemo(() => {
     if (!tilesetSchema) return [];
     const options = visibleTilesets
-      .filter((t) => t.id.startsWith(`${tilesetSchema}.`))
-      .map((t) => {
-        const layer = t.id.slice(tilesetSchema.length + 1);
+      .filter((ts) => ts.id.startsWith(`${tilesetSchema}.`))
+      .map((ts) => {
+        const layer = ts.id.slice(tilesetSchema.length + 1);
         const schemaVector = layer === 'mvt' || layer === 'json';
-        return { label: schemaVector ? `All layers (schema tileset, ${layer.toUpperCase()})` : layer, value: layer };
+        return {
+          label: schemaVector ? t('tileseeder.allLayersSchemaTilesetType', { type: layer.toUpperCase() }) : layer,
+          value: layer,
+          allLayers: schemaVector,
+        };
       })
-      .sort((a, b) => Number(b.label.startsWith('All layers')) - Number(a.label.startsWith('All layers')));
-    if (visibleTilesets.some((t) => t.id === tilesetSchema)) {
-      options.unshift({ label: 'All layers (schema tileset)', value: SCHEMA_TILESET });
+      .sort((a, b) => Number(b.allLayers) - Number(a.allLayers));
+    if (visibleTilesets.some((ts) => ts.id === tilesetSchema)) {
+      options.unshift({ label: t('tileseeder.allLayersSchemaTileset'), value: SCHEMA_TILESET, allLayers: true });
     }
     return options;
-  }, [visibleTilesets, tilesetSchema]);
+  }, [visibleTilesets, tilesetSchema, t]);
   // Drop a chosen layer that the tile-type filter no longer offers.
   useEffect(() => {
     const layer = form.getFieldValue('tileset_layer') as string | undefined;
@@ -193,7 +201,7 @@ export default function TileSeederPage() {
     setSubmitError(null);
     try {
       await seeder().postSeedJob(body);
-      message.success('Seed job queued. The server picks it up within a minute.');
+      message.success(t('tileseeder.seedJobQueued'));
       queryClient.invalidateQueries({ queryKey: ['seed-jobs'] });
     } catch (e) {
       // Kept on screen: the message names e.g. the grids the tileset actually has.
@@ -206,7 +214,7 @@ export default function TileSeederPage() {
   const handleStop = async (job: SeedJob) => {
     try {
       const stopping = await seeder().deleteSeedJob(job.uuid);
-      message.info(stopping ? 'Stop requested. The worker stops the job shortly.' : 'Seed job cancelled.');
+      message.info(stopping ? t('tileseeder.stopRequested') : t('tileseeder.seedJobCancelled'));
       queryClient.invalidateQueries({ queryKey: ['seed-jobs'] });
       queryClient.invalidateQueries({ queryKey: ['seed-job', job.uuid] });
     } catch (e) {
@@ -216,16 +224,17 @@ export default function TileSeederPage() {
 
   const stopButton = (job: SeedJob) =>
     isActive(job) && !job.cancel_requested ? (
-      <Popconfirm title="Stop this seed job?" okText="Stop" onConfirm={() => handleStop(job)}>
-        <Button size="small" danger icon={<StopOutlined />}>Stop</Button>
+      <Popconfirm title={t('tileseeder.stopSeedJobConfirm')} okText={t('tileseeder.stop')} onConfirm={() => handleStop(job)}>
+        <Button size="small" danger icon={<StopOutlined />}>{t('tileseeder.stop')}</Button>
       </Popconfirm>
     ) : job.cancel_requested && isActive(job) ? (
-      <Text type="secondary">Stopping…</Text>
+      <Text type="secondary">{t('tileseeder.stopping')}</Text>
     ) : null;
 
   return (
     <div>
       <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
+        {/* i18n-ignore */}
         <h2>Tile Seeder</h2>
       </Space>
 
@@ -233,48 +242,50 @@ export default function TileSeederPage() {
         style={{ marginBottom: 16 }}
         type="info"
         showIcon
-        message="Seeding pre-renders a tileset's tiles into the cache. Jobs are queued and picked up by the server within a minute, so 'pending' is normal until then."
+        message={t('tileseeder.intro')}
       />
 
-      <Card title="New seed job" size="small" style={{ marginBottom: 16 }}>
+      <Card title={t('tileseeder.newSeedJob')} size="small" style={{ marginBottom: 16 }}>
         {caps.error ? (
-          <Alert type="error" showIcon message={`Could not load the tilesets: ${getErrorMessage(caps.error)}`} />
+          <Alert type="error" showIcon message={t('tileseeder.loadTilesetsFailed', { message: getErrorMessage(caps.error) })} />
         ) : (
           <Form form={form} layout="vertical" style={{ maxWidth: 720 }}>
             <Form.Item
-              label="Tileset"
+              label={t('tileseeder.tileset')}
               required
               extra={
                 <Space size="small">
-                  <Text type="secondary">Tile types:</Text>
+                  <Text type="secondary">{t('tileseeder.tileTypes')}</Text>
                   <Checkbox.Group
                     value={tileKinds}
                     onChange={(v) => setTileKinds(v as TileKind[])}
                     options={[
-                      { label: 'Raster (PNG/JPEG)', value: 'raster' },
+                      { label: t('tileseeder.rasterKind'), value: 'raster' },
+                      // i18n-ignore
                       { label: 'MVT', value: 'mvt' },
+                      // i18n-ignore
                       { label: 'JSON', value: 'json' },
                     ]}
                   />
-                  {tileKinds.length === 0 && <Text type="warning">Choose at least one type</Text>}
+                  {tileKinds.length === 0 && <Text type="warning">{t('tileseeder.chooseOneType')}</Text>}
                 </Space>
               }
             >
               <Space.Compact style={{ width: '100%' }}>
-                <Form.Item name="tileset_schema" noStyle rules={[{ required: true, message: 'Choose a schema' }]}>
+                <Form.Item name="tileset_schema" noStyle rules={[{ required: true, message: t('tileseeder.chooseSchema') }]}>
                   <Select
                     showSearch
                     loading={caps.isLoading}
-                    placeholder="Schema"
+                    placeholder={t('tileseeder.schema')}
                     style={{ width: '40%' }}
                     options={tilesetSchemas.map((n) => ({ label: n, value: n }))}
                     onChange={() => form.setFieldsValue({ tileset_layer: undefined })}
                   />
                 </Form.Item>
-                <Form.Item name="tileset_layer" noStyle rules={[{ required: true, message: 'Choose a layer' }]}>
+                <Form.Item name="tileset_layer" noStyle rules={[{ required: true, message: t('tileseeder.chooseLayer') }]}>
                   <Select
                     showSearch
-                    placeholder="Layer"
+                    placeholder={t('tileseeder.layer')}
                     style={{ width: '60%' }}
                     disabled={!tilesetSchema}
                     options={tilesetLayerOptions}
@@ -285,30 +296,31 @@ export default function TileSeederPage() {
             <Space wrap align="start" size="large">
               <Form.Item
                 name="grid"
-                label="Grid"
-                rules={[{ required: true, message: 'Choose a grid' }]}
-                tooltip="Only the grids this tileset declares."
+                label={t('tileseeder.grid')}
+                rules={[{ required: true, message: t('tileseeder.chooseGrid') }]}
+                tooltip={t('tileseeder.gridTip')}
               >
                 <Select
                   style={{ width: 200 }}
                   disabled={!tileset}
                   options={(tileset?.grids ?? []).map((g) => ({
+                    // i18n-ignore
                     label: crsLabel(caps.data?.grids[g]?.crs) ? `${g} (${crsLabel(caps.data?.grids[g]?.crs)})` : g,
                     value: g,
                   }))}
                 />
               </Form.Item>
-              <Form.Item name="threads" label="Threads" tooltip="Optional; the server default when empty.">
+              <Form.Item name="threads" label={t('tileseeder.threads')} tooltip={t('tileseeder.threadsTip')}>
                 <InputNumber min={1} max={64} style={{ width: 120 }} />
               </Form.Item>
-              <Form.Item name="name" label="Name" tooltip="Optional label; defaults to the tileset.">
+              <Form.Item name="name" label={t('common.name')} tooltip={t('tileseeder.nameTip')}>
                 <Input style={{ width: 240 }} maxLength={255} />
               </Form.Item>
             </Space>
             <Form.Item
               name="zoom"
-              label={zoom ? `Zoom levels ${zoom[0]}–${zoom[1]}` : 'Zoom levels'}
-              rules={[{ required: true, message: 'Choose a zoom range' }]}
+              label={zoom ? t('tileseeder.zoomLevelsRange', { from: zoom[0], to: zoom[1] }) : t('tileseeder.zoomLevels')}
+              rules={[{ required: true, message: t('tileseeder.chooseZoomRange') }]}
             >
               <Slider
                 range
@@ -319,8 +331,8 @@ export default function TileSeederPage() {
               />
             </Form.Item>
             <Form.Item
-              label="Extent layer"
-              tooltip="Seed only within this layer's extent — typically a layer with a single polygon. Must be a registered layer you can read. Leave empty to seed the whole grid."
+              label={t('tileseeder.extentLayer')}
+              tooltip={t('tileseeder.extentLayerTip')}
             >
               <Space.Compact style={{ width: '100%' }}>
                 <Form.Item name="extent_schema" noStyle>
@@ -328,7 +340,7 @@ export default function TileSeederPage() {
                     showSearch
                     allowClear
                     loading={schemasLoading}
-                    placeholder="Schema"
+                    placeholder={t('tileseeder.schema')}
                     style={{ width: '40%' }}
                     options={schemaNames.map((s) => ({ label: s.name, value: s.name }))}
                     onChange={() => form.setFieldsValue({ extent_table: undefined })}
@@ -337,16 +349,16 @@ export default function TileSeederPage() {
                 <Form.Item
                   name="extent_table"
                   noStyle
-                  rules={[{ required: !!extentSchema, message: 'Choose a layer, or clear the schema' }]}
+                  rules={[{ required: !!extentSchema, message: t('tileseeder.chooseLayerOrClear') }]}
                 >
                   <Select
                     showSearch
                     allowClear
-                    placeholder="Layer"
+                    placeholder={t('tileseeder.layer')}
                     style={{ width: '60%' }}
                     disabled={!extentSchema}
                     loading={extentTablesLoading}
-                    options={extentTables.map((t) => ({ label: t.table, value: t.table }))}
+                    options={extentTables.map((gt) => ({ label: gt.table, value: gt.table }))}
                   />
                 </Form.Item>
               </Space.Compact>
@@ -359,17 +371,19 @@ export default function TileSeederPage() {
                 message={
                   <>
                     {inExtent !== null ? (
-                      <>
-                        About <Text strong>{inExtent.toLocaleString()}</Text> tiles within the bounding box of{' '}
-                        {extentLayer} at zoom {zFrom}–{zTo} (from the table statistics).
-                      </>
+                      <Trans
+                        i18nKey="tileseeder.tileCountExtent"
+                        values={{ n: formatNumber(inExtent), layer: extentLayer, from: zFrom, to: zTo }}
+                        components={{ strong: <Text strong /> }}
+                      />
                     ) : (
-                      <>
-                        Up to <Text strong>{tileCount.toLocaleString()}</Text> tiles for the whole grid at zoom {zFrom}–{zTo}
-                        {extentLayer ? '; the extent layer limits the actual number' : ''}.
-                      </>
+                      <Trans
+                        i18nKey={extentLayer ? 'tileseeder.tileCountGridExtent' : 'tileseeder.tileCountGrid'}
+                        values={{ n: formatNumber(tileCount), from: zFrom, to: zTo }}
+                        components={{ strong: <Text strong /> }}
+                      />
                     )}
-                    {tileCount > LARGE_SEED && ' Each extra zoom level quadruples the work, so this can run for hours.'}
+                    {tileCount > LARGE_SEED && <> {t('tileseeder.largeSeedWarning')}</>}
                   </>
                 }
               />
@@ -385,27 +399,27 @@ export default function TileSeederPage() {
               />
             )}
             <Button type="primary" icon={<RocketOutlined />} loading={submitting} onClick={handleSubmit}>
-              Queue seed job
+              {t('tileseeder.queueSeedJob')}
             </Button>
           </Form>
         )}
       </Card>
 
       <Card
-        title="Seed jobs"
+        title={t('tileseeder.seedJobs')}
         size="small"
         extra={
           <Space>
             <Select
               allowClear
-              placeholder="All statuses"
+              placeholder={t('tileseeder.allStatuses')}
               style={{ width: 150 }}
               value={statusFilter}
               onChange={setStatusFilter}
               options={STATUSES.map((s) => ({ label: s, value: s }))}
             />
-            <Input.Search allowClear placeholder="Search name, tileset, user" onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
-            <Button icon={<ReloadOutlined />} onClick={() => jobsQuery.refetch()}>Refresh</Button>
+            <Input.Search allowClear placeholder={t('tileseeder.searchPlaceholder')} onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
+            <Button icon={<ReloadOutlined />} onClick={() => jobsQuery.refetch()}>{t('common.refresh')}</Button>
           </Space>
         }
       >
@@ -418,25 +432,25 @@ export default function TileSeederPage() {
             size="small"
             loading={jobsQuery.isLoading}
             pagination={{ pageSize: 25, hideOnSinglePage: true }}
-            locale={{ emptyText: 'No seed jobs yet.' }}
+            locale={{ emptyText: t('tileseeder.noSeedJobs') }}
             columns={[
-              { title: 'Status', key: 'status', render: (_: unknown, j: SeedJob) => <JobStatus job={j} /> },
-              { title: 'Name', dataIndex: 'name', key: 'name' },
-              { title: 'Tileset', dataIndex: 'tileset', key: 'tileset', render: (v: string | null) => v ?? '—' },
-              { title: 'Grid', dataIndex: 'grid', key: 'grid', render: (v: string | null) => v ?? '—' },
+              { title: t('common.status'), key: 'status', render: (_: unknown, j: SeedJob) => <JobStatus job={j} /> },
+              { title: t('common.name'), dataIndex: 'name', key: 'name' },
+              { title: t('tileseeder.tileset'), dataIndex: 'tileset', key: 'tileset', render: (v: string | null) => v ?? '—' },
+              { title: t('tileseeder.grid'), dataIndex: 'grid', key: 'grid', render: (v: string | null) => v ?? '—' },
               {
-                title: 'Zoom', key: 'zoom',
+                title: t('tileseeder.zoom'), key: 'zoom',
                 render: (_: unknown, j: SeedJob) => (j.zoom_start !== null ? `${j.zoom_start}–${j.zoom_end}` : '—'),
               },
-              { title: 'Extent', dataIndex: 'extent_layer', key: 'extent', render: (v: string | null) => v ?? '—' },
-              { title: 'User', dataIndex: 'username', key: 'user', render: (v: string | null) => v ?? '—' },
-              { title: 'Created', dataIndex: 'created', key: 'created' },
-              { title: 'Finished', dataIndex: 'finished', key: 'finished', render: (v: string | null) => v ?? '—' },
+              { title: t('tileseeder.extent'), dataIndex: 'extent_layer', key: 'extent', render: (v: string | null) => v ?? '—' },
+              { title: t('tileseeder.user'), dataIndex: 'username', key: 'user', render: (v: string | null) => v ?? '—' },
+              { title: t('tileseeder.created'), dataIndex: 'created', key: 'created' },
+              { title: t('tileseeder.finished'), dataIndex: 'finished', key: 'finished', render: (v: string | null) => v ?? '—' },
               {
-                title: 'Actions', key: 'actions', width: 170,
+                title: t('common.actions'), key: 'actions', width: 170,
                 render: (_: unknown, j: SeedJob) => (
                   <Space>
-                    <Button size="small" onClick={() => setDetailUuid(j.uuid)}>Details</Button>
+                    <Button size="small" onClick={() => setDetailUuid(j.uuid)}>{t('tileseeder.details')}</Button>
                     {stopButton(j)}
                   </Space>
                 ),
@@ -447,7 +461,7 @@ export default function TileSeederPage() {
       </Card>
 
       <Drawer
-        title={detail ? `Seed job: ${detail.name}` : 'Seed job'}
+        title={detail ? t('tileseeder.seedJobNamed', { name: detail.name }) : t('tileseeder.seedJob')}
         open={!!detailUuid}
         onClose={() => setDetailUuid(null)}
         width={640}
@@ -456,33 +470,35 @@ export default function TileSeederPage() {
         {detail && (
           <Space direction="vertical" style={{ width: '100%' }}>
             <Descriptions size="small" column={2} bordered>
-              <Descriptions.Item label="Status" span={2}><JobStatus job={detail} /></Descriptions.Item>
-              <Descriptions.Item label="Tileset">{detail.tileset ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Grid">{detail.grid ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Zoom">
+              <Descriptions.Item label={t('common.status')} span={2}><JobStatus job={detail} /></Descriptions.Item>
+              <Descriptions.Item label={t('tileseeder.tileset')}>{detail.tileset ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('tileseeder.grid')}>{detail.grid ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('tileseeder.zoom')}>
+                {/* i18n-ignore */}
                 {detail.zoom_start !== null ? `${detail.zoom_start}–${detail.zoom_end}` : '—'}
               </Descriptions.Item>
-              <Descriptions.Item label="Threads">{detail.threads ?? 'default'}</Descriptions.Item>
-              <Descriptions.Item label="Extent layer" span={2}>{detail.extent_layer ?? 'whole grid'}</Descriptions.Item>
-              <Descriptions.Item label="Created">{detail.created}</Descriptions.Item>
-              <Descriptions.Item label="Started">{detail.started ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Heartbeat">{detail.heartbeat ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Finished">{detail.finished ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Host / pid" span={2}>
+              <Descriptions.Item label={t('tileseeder.threads')}>{detail.threads ?? t('tileseeder.threadsDefault')}</Descriptions.Item>
+              <Descriptions.Item label={t('tileseeder.extentLayer')} span={2}>{detail.extent_layer ?? t('tileseeder.wholeGrid')}</Descriptions.Item>
+              <Descriptions.Item label={t('tileseeder.created')}>{detail.created}</Descriptions.Item>
+              <Descriptions.Item label={t('tileseeder.started')}>{detail.started ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('tileseeder.heartbeat')}>{detail.heartbeat ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('tileseeder.finished')}>{detail.finished ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('tileseeder.hostPid')} span={2}>
+                {/* i18n-ignore */}
                 {detail.host ? `${detail.host} / ${detail.pid ?? '—'}` : '—'}
               </Descriptions.Item>
               {detail.cancel_requested && (
-                <Descriptions.Item label="Stop requested" span={2}>{detail.cancel_requested}</Descriptions.Item>
+                <Descriptions.Item label={t('tileseeder.stopRequestedLabel')} span={2}>{detail.cancel_requested}</Descriptions.Item>
               )}
-              <Descriptions.Item label="User" span={2}>{detail.username ?? '—'}</Descriptions.Item>
+              <Descriptions.Item label={t('tileseeder.user')} span={2}>{detail.username ?? '—'}</Descriptions.Item>
             </Descriptions>
             {detail.status === 'pending' && (
-              <Alert type="info" showIcon message="Waiting for the server to pick up the job (within a minute)." />
+              <Alert type="info" showIcon message={t('tileseeder.waitingForServer')} />
             )}
             {detail.error && <Alert type="error" showIcon message={detail.error} />}
-            <Text strong>Log</Text>
+            <Text strong>{t('tileseeder.log')}</Text>
             {detailQuery.isLoading ? (
-              <Text type="secondary">Loading…</Text>
+              <Text type="secondary">{t('common.loading')}</Text>
             ) : detail.log ? (
               <pre
                 style={{
@@ -493,7 +509,7 @@ export default function TileSeederPage() {
                 {terminalText(detail.log)}
               </pre>
             ) : (
-              <Text type="secondary">No output yet.</Text>
+              <Text type="secondary">{t('tileseeder.noOutput')}</Text>
             )}
           </Space>
         )}

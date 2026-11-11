@@ -8,7 +8,6 @@ export const PENDING: string[] = [
   'features/import',
   'features/keyvalue',
   'features/metadata',
-  'features/ogc',
   'features/realtime',
   'features/rpc',
   'features/rules',
@@ -17,6 +16,5 @@ export const PENDING: string[] = [
   'features/sequences',
   'features/snapshots',
   'features/sql',
-  'features/tileseeder',
   'features/users',
 ];

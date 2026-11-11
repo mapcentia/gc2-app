@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Alert, Card, Select, Space, Typography } from 'antd';
 import { Mapcache } from '@mapcentia/gc2-sdk';
 import { getAdminClient } from '../../baas/adminClient';
@@ -11,11 +12,14 @@ import SchemaTileSettings from './SchemaTileSettings';
 const { Text } = Typography;
 
 const GRID_OPTIONS = [
+  // i18n-ignore
   { label: 'g20 (Web Mercator, EPSG:3857)', value: 'g20' },
+  // i18n-ignore
   { label: '25832 (ETRS89 / UTM32N)', value: '25832' },
 ];
 
 export default function TileCachePage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isSuperUser = user?.superUser === true;
   const database = (user?.database as string) ?? '';
@@ -43,10 +47,11 @@ export default function TileCachePage() {
 
   return (
     <div style={{ maxWidth: 860 }}>
+      {/* i18n-ignore */}
       <h2>Tile Cache</h2>
       <Space style={{ marginBottom: 16 }} wrap>
         <Select
-          placeholder="Select schema"
+          placeholder={t('ogc.selectSchema')}
           style={{ width: 220 }}
           loading={isLoading}
           showSearch
@@ -58,7 +63,7 @@ export default function TileCachePage() {
           options={schemas.map((s) => ({ label: s, value: s }))}
         />
         <Select
-          placeholder="Select table"
+          placeholder={t('ogc.selectTable')}
           style={{ width: 260 }}
           showSearch
           loading={tablesLoading}
@@ -66,7 +71,7 @@ export default function TileCachePage() {
           allowClear
           value={table}
           onChange={(v?: string) => setTable(v ?? null)}
-          options={tables.map((t) => ({ label: t, value: t }))}
+          options={tables.map((name) => ({ label: name, value: name }))}
         />
         <Select
           style={{ width: 260 }}
@@ -77,10 +82,14 @@ export default function TileCachePage() {
       </Space>
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Card title="WMTS" size="small">
+        <Card
+          // i18n-ignore
+          title="WMTS"
+          size="small"
+        >
           <Space direction="vertical" style={{ width: '100%' }}>
             <UrlField
-              label="GetCapabilities (all tilesets in the database)"
+              label={t('ogc.wmtsCapabilities')}
               url={wmtsCapabilities}
               openUrl={wmtsCapabilities}
             />
@@ -88,14 +97,7 @@ export default function TileCachePage() {
               type="info"
               showIcon
               message={
-                <>
-                  The easiest way into QGIS: add the capabilities URL as a{' '}
-                  <Text strong>WMS/WMTS</Text> connection and pick the tileset. Anonymously
-                  readable layers need no credentials; protected tilesets are challenged with
-                  HTTP Basic auth (the database&apos;s viewer password). Applications can send an{' '}
-                  <Text code>Authorization: Bearer</Text> header instead — the token cannot be
-                  put in the URL.
-                </>
+                <Trans i18nKey="ogc.wmtsHelp" components={{ strong: <Text strong />, code: <Text code /> }} />
               }
             />
           </Space>
@@ -106,49 +108,34 @@ export default function TileCachePage() {
             type="warning"
             showIcon
             message={
-              <>
-                The schema tileset (<Text code>{schema}</Text>, <Text code>{schema}.mvt</Text>) is drawn from every
-                layer of the schema, so fetching it requires read access to all of them: if one layer is protected,
-                the whole schema tileset needs credentials, even if the other layers are public. The XYZ (gmaps)
-                URLs don&apos;t work for a schema tileset yet (GC2 answers 403); use the TMS templates.
-              </>
+              <Trans i18nKey="ogc.schemaTilesetWarning" values={{ schema }} components={{ code: <Text code /> }} />
             }
           />
         )}
 
-        <Card title="Tile URL templates (Google Maps XYZ)" size="small">
+        <Card title={t('ogc.xyzTitle')} size="small">
           <Space direction="vertical" style={{ width: '100%' }}>
-            <UrlField label="Cached image tiles (PNG)" url={xyzRasterTemplate} />
-            <UrlField label="Vector tiles (MVT)" url={xyzMvtTemplate} />
+            <UrlField label={t('ogc.cachedImageTiles')} url={xyzRasterTemplate} />
+            <UrlField label={t('ogc.vectorTiles')} url={xyzMvtTemplate} />
             <Alert
               type="info"
               showIcon
               message={
-                <>
-                  Standard <Text strong>XYZ</Text> axis order (top-left origin) — usable as-is
-                  with <Text code>{'{y}'}</Text> in a QGIS XYZ connection, MapLibre, Leaflet or
-                  OpenLayers. Prefer this over the TMS templates unless your client specifically
-                  speaks TMS.
-                </>
+                <Trans i18nKey="ogc.xyzHelp" components={{ strong: <Text strong />, code: <Text code /> }} />
               }
             />
           </Space>
         </Card>
 
-        <Card title="Tile URL templates (TMS)" size="small">
+        <Card title={t('ogc.tmsTitle')} size="small">
           <Space direction="vertical" style={{ width: '100%' }}>
-            <UrlField label="Cached image tiles (PNG)" url={rasterTemplate} />
-            <UrlField label="Vector tiles (MVT)" url={mvtTemplate} />
+            <UrlField label={t('ogc.cachedImageTiles')} url={rasterTemplate} />
+            <UrlField label={t('ogc.vectorTiles')} url={mvtTemplate} />
             <Alert
               type="info"
               showIcon
               message={
-                <>
-                  The templates are <Text strong>TMS</Text>, so the y-axis is flipped compared
-                  to XYZ: in a QGIS XYZ connection write <Text code>{'{-y}'}</Text> instead of{' '}
-                  <Text code>{'{y}'}</Text>; in MapLibre set <Text code>scheme: &apos;tms&apos;</Text>.
-                  The MVT tiles&apos; source-layer is named <Text code>schema.table</Text>.
-                </>
+                <Trans i18nKey="ogc.tmsHelp" components={{ strong: <Text strong />, code: <Text code /> }} />
               }
             />
           </Space>

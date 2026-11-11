@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Alert, Card, Select, Space, Typography } from 'antd';
 import { useAuth } from '../../auth/AuthProvider';
 import UrlField from './UrlField';
@@ -10,6 +11,7 @@ const { Text } = Typography;
 const SRS_OPTIONS = ['4326', '3857', '25832'];
 
 export default function OgcServicesPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const database = (user?.database as string) ?? '';
   const host = import.meta.env.VITE_GC2_HOST;
@@ -29,10 +31,11 @@ export default function OgcServicesPage() {
 
   return (
     <div style={{ maxWidth: 860 }}>
+      {/* i18n-ignore */}
       <h2>OGC Services</h2>
       <Space style={{ marginBottom: 16 }} wrap>
         <Select
-          placeholder="Select schema"
+          placeholder={t('ogc.selectSchema')}
           style={{ width: 260 }}
           loading={isLoading}
           showSearch
@@ -41,25 +44,27 @@ export default function OgcServicesPage() {
           options={schemas.map((name) => ({ label: name, value: name }))}
         />
         <Select
-          placeholder="SRS (optional, WFS)"
+          placeholder={t('ogc.srsPlaceholder')}
           style={{ width: 200 }}
           allowClear
           showSearch
           value={srs}
           onChange={(v) => setSrs(v ?? null)}
+          // i18n-ignore
           options={SRS_OPTIONS.map((v) => ({ label: `EPSG:${v}`, value: v }))}
         />
       </Space>
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card
+          // i18n-ignore
           title="OWS (WMS/WFS)"
-          extra={<Text type="secondary">Read-only</Text>}
+          extra={<Text type="secondary">{t('ogc.readOnly')}</Text>}
           size="small"
         >
           <Space direction="vertical" style={{ width: '100%' }}>
             <UrlField
-              label="Service URL (anonymous, HTTP Basic or Bearer token)"
+              label={t('ogc.serviceUrl')}
               url={owsUrl}
               openUrl={`${owsUrl}?SERVICE=WMS&REQUEST=GetCapabilities`}
             />
@@ -67,27 +72,21 @@ export default function OgcServicesPage() {
               type="info"
               showIcon
               message={
-                <>
-                  Read-only endpoint serving WMS rendering and WFS reads. In QGIS, add the URL as
-                  a <Text strong>WMS/WMTS</Text> connection. Anonymously readable layers need no
-                  credentials; protected layers are challenged with HTTP Basic auth using the
-                  database&apos;s viewer password. Applications can send an{' '}
-                  <Text code>Authorization: Bearer</Text> header instead — the token must match
-                  the database in the path.
-                </>
+                <Trans i18nKey="ogc.owsHelp" components={{ strong: <Text strong />, code: <Text code /> }} />
               }
             />
           </Space>
         </Card>
 
         <Card
+          // i18n-ignore
           title="WFS-t"
-          extra={<Text type="secondary">Supports transactions</Text>}
+          extra={<Text type="secondary">{t('ogc.supportsTransactions')}</Text>}
           size="small"
         >
           <Space direction="vertical" style={{ width: '100%' }}>
             <UrlField
-              label="Service URL (anonymous, HTTP Basic or Bearer token)"
+              label={t('ogc.serviceUrl')}
               url={wfsUrl}
               openUrl={`${wfsUrl}?SERVICE=WFS&REQUEST=GetCapabilities`}
             />
@@ -95,14 +94,7 @@ export default function OgcServicesPage() {
               type="info"
               showIcon
               message={
-                <>
-                  WFS endpoint with transaction support (WFS-T): writable layers accept inserts,
-                  updates and deletes. In QGIS, add the URL as a{' '}
-                  <Text strong>WFS / OGC API Features</Text> connection. Pick an SRS above to pin
-                  coordinates to a specific EPSG code — without it the service default is used.
-                  Transactions require credentials: HTTP Basic (viewer password) or an{' '}
-                  <Text code>Authorization: Bearer</Text> header.
-                </>
+                <Trans i18nKey="ogc.wfsHelp" components={{ strong: <Text strong />, code: <Text code /> }} />
               }
             />
           </Space>
