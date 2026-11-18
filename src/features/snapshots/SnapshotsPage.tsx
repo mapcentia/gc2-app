@@ -9,7 +9,9 @@ import {
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { Snapshots, isCentiaApiError } from '@mapcentia/gc2-sdk';
-import type { RelationSnapshot, SnapshotFormat, SnapshotFormatResult, SnapshotJob, SnapshotStatus } from '@mapcentia/gc2-sdk';
+import type {
+  RelationSnapshot, SnapshotCatalogRebuild, SnapshotFormat, SnapshotFormatResult, SnapshotJob, SnapshotStatus,
+} from '@mapcentia/gc2-sdk';
 import { message } from '../../utils/message';
 import { getAdminClient, getErrorMessage } from '../../baas/adminClient';
 import { getStatus } from '../../baas/client';
@@ -35,27 +37,7 @@ const STATUS_COLOR: Record<SnapshotStatus, string> = {
   superseded: 'warning',
 };
 
-/**
- * A rewrite of the database's snapshot STAC catalog
- * (/api/v4/snapshots/catalog/rebuilds). Typed and called here through the
- * plain HTTP client until the SDK release that carries
- * `Snapshots.postSnapshotCatalogRebuild()` is installed.
- */
-interface CatalogRebuild {
-  id: string;
-  status: 'pending' | 'running' | 'succeeded' | 'failed';
-  documents: number | null;
-  failed_documents: number | null;
-  error: string | null;
-  username: string;
-  created: string;
-  started: string | null;
-  finished: string | null;
-}
-
-const CATALOG_REBUILDS_PATH = 'api/v4/snapshots/catalog/rebuilds';
-
-const isActiveRebuild = (r?: CatalogRebuild | null) => r?.status === 'pending' || r?.status === 'running';
+const isActiveRebuild = (r?: SnapshotCatalogRebuild | null) => r?.status === 'pending' || r?.status === 'running';
 
 const KNOWN_FORMATS: SnapshotFormat[] = ['parquet', 'flatgeobuf'];
 const FORMAT_EXT: Record<string, string> = { parquet: 'parquet', flatgeobuf: 'fgb' };
@@ -197,9 +179,9 @@ export default function SnapshotsPage() {
   // null = the server has no such endpoint (older GC2): the control is hidden.
   const rebuildsQuery = useQuery({
     queryKey: ['snapshot-catalog-rebuilds'],
-    queryFn: async (): Promise<CatalogRebuild[] | null> => {
+    queryFn: async (): Promise<SnapshotCatalogRebuild[] | null> => {
       try {
-        return await getAdminClient().http.request<CatalogRebuild[]>({ path: CATALOG_REBUILDS_PATH, method: 'GET' });
+        return await snapshotsClient().getSnapshotCatalogRebuilds();
       } catch {
         return null;
       }
@@ -214,7 +196,7 @@ export default function SnapshotsPage() {
   const handleRebuildCatalog = async () => {
     setQueueingRebuild(true);
     try {
-      await getAdminClient().http.request({ path: CATALOG_REBUILDS_PATH, method: 'POST', expectedStatus: 202 });
+      await snapshotsClient().postSnapshotCatalogRebuild();
       message.success(t('snapshots.catalogRebuildQueued'));
     } catch (e) {
       const code = apiErrorCode(e);
