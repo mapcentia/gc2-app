@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Alert, AutoComplete, Button, Card, Checkbox, Descriptions, InputNumber, Popover, Select, Space, Spin,
+  Alert, AutoComplete, Button, Card, Checkbox, Descriptions, InputNumber, Popconfirm, Popover, Select, Space, Spin,
   Table, Tag, Tooltip, Typography,
 } from 'antd';
 import {
-  CameraOutlined, CopyOutlined, DownloadOutlined, LinkOutlined, ReloadOutlined,
+  CameraOutlined, CopyOutlined, DownloadOutlined, LinkOutlined, ReloadOutlined, SyncOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { Snapshots, isCentiaApiError } from '@mapcentia/gc2-sdk';
@@ -34,6 +34,28 @@ const STATUS_COLOR: Record<SnapshotStatus, string> = {
   failed: 'error',
   superseded: 'warning',
 };
+
+/**
+ * A rewrite of the database's snapshot STAC catalog
+ * (/api/v4/snapshots/catalog/rebuilds). Typed and called here through the
+ * plain HTTP client until the SDK release that carries
+ * `Snapshots.postSnapshotCatalogRebuild()` is installed.
+ */
+interface CatalogRebuild {
+  id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+  documents: number | null;
+  failed_documents: number | null;
+  error: string | null;
+  username: string;
+  created: string;
+  started: string | null;
+  finished: string | null;
+}
+
+const CATALOG_REBUILDS_PATH = 'api/v4/snapshots/catalog/rebuilds';
+
+const isActiveRebuild = (r?: CatalogRebuild | null) => r?.status === 'pending' || r?.status === 'running';
 
 const KNOWN_FORMATS: SnapshotFormat[] = ['parquet', 'flatgeobuf'];
 const FORMAT_EXT: Record<string, string> = { parquet: 'parquet', flatgeobuf: 'fgb' };
@@ -136,6 +158,7 @@ export default function SnapshotsPage() {
   const [wantedFormats, setWantedFormats] = useState<string[]>(['parquet']);
   const [creating, setCreating] = useState(false);
   const [notConfigured, setNotConfigured] = useState(false);
+  const [queueingRebuild, setQueueingRebuild] = useState(false);
 
   const schemas = useSchemaNames().data?.map((s) => s.name) ?? [];
   const relationNames = useTableSummary(schema).data?.map((t) => t.name) ?? [];
@@ -168,6 +191,45 @@ export default function SnapshotsPage() {
     }
     hadActive.current = hasActive;
   }, [hasActive]);
+
+  // ──── Catalog rebuilds (super-user) ────
+
+  // null = the server has no such endpoint (older GC2): the control is hidden.
+  const rebuildsQuery = useQuery({
+    queryKey: ['snapshot-catalog-rebuilds'],
+    queryFn: async (): Promise<CatalogRebuild[] | null> => {
+      try {
+        return await getAdminClient().http.request<CatalogRebuild[]>({ path: CATALOG_REBUILDS_PATH, method: 'GET' });
+      } catch {
+        return null;
+      }
+    },
+    enabled: isSuperUser,
+    retry: false,
+    refetchInterval: (q) => (isActiveRebuild(q.state.data?.[0]) ? 3000 : false),
+  });
+  const catalogRebuildSupported = Array.isArray(rebuildsQuery.data);
+  const lastRebuild = rebuildsQuery.data?.[0] ?? null;
+
+  const handleRebuildCatalog = async () => {
+    setQueueingRebuild(true);
+    try {
+      await getAdminClient().http.request({ path: CATALOG_REBUILDS_PATH, method: 'POST', expectedStatus: 202 });
+      message.success(t('snapshots.catalogRebuildQueued'));
+    } catch (e) {
+      const code = apiErrorCode(e);
+      if (code === 'CATALOG_REBUILD_IN_PROGRESS') {
+        message.warning(t('snapshots.catalogRebuildInProgress'));
+      } else if (code === 'SNAPSHOT_NOT_CONFIGURED') {
+        setNotConfigured(true);
+      } else {
+        message.error(getErrorMessage(e));
+      }
+    } finally {
+      setQueueingRebuild(false);
+      queryClient.invalidateQueries({ queryKey: ['snapshot-catalog-rebuilds'] });
+    }
+  };
 
   // ──── Published snapshots for the chosen relation ────
 
@@ -337,9 +399,44 @@ export default function SnapshotsPage() {
           size="small"
           style={{ marginBottom: 16 }}
           extra={
-            <Button size="small" icon={<ReloadOutlined />} onClick={() => jobsQuery.refetch()}>
-              {t('common.refresh')}
-            </Button>
+            <Space size={8}>
+              {catalogRebuildSupported && lastRebuild && (
+                <Tooltip
+                  title={
+                    lastRebuild.error
+                      ?? (lastRebuild.documents !== null
+                        ? t('snapshots.catalogRebuildDocuments', { count: formatNumber(lastRebuild.documents), date: lastRebuild.finished ?? '' })
+                        : lastRebuild.created)
+                  }
+                >
+                  <Tag style={{ margin: 0 }} color={STATUS_COLOR[lastRebuild.status]}>
+                    {t('snapshots.catalogRebuildStatus', { status: lastRebuild.status })}
+                  </Tag>
+                </Tooltip>
+              )}
+              {catalogRebuildSupported && (
+                <Popconfirm
+                  title={t('snapshots.catalogRebuildConfirmTitle')}
+                  description={<div style={{ maxWidth: 360 }}>{t('snapshots.catalogRebuildConfirm')}</div>}
+                  okText={t('snapshots.rebuildCatalog')}
+                  cancelText={t('common.cancel')}
+                  onConfirm={handleRebuildCatalog}
+                  disabled={isActiveRebuild(lastRebuild)}
+                >
+                  <Button
+                    size="small"
+                    icon={<SyncOutlined />}
+                    loading={queueingRebuild}
+                    disabled={isActiveRebuild(lastRebuild)}
+                  >
+                    {t('snapshots.rebuildCatalog')}
+                  </Button>
+                </Popconfirm>
+              )}
+              <Button size="small" icon={<ReloadOutlined />} onClick={() => jobsQuery.refetch()}>
+                {t('common.refresh')}
+              </Button>
+            </Space>
           }
         >
           <Table

@@ -466,7 +466,14 @@
     "copyFormatUrl": "Kopier {{format}}-URL",
     "urlCopied": "URL kopieret",
     "snapshotId": "Snapshot-id",
-    "colColumn": "Column"
+    "colColumn": "Column",
+    "rebuildCatalog": "Genskriv katalog",
+    "catalogRebuildConfirmTitle": "Genskriv hele snapshot-kataloget?",
+    "catalogRebuildConfirm": "Alle STAC-dokumenter for databasens snapshots skrives igen. Det er kun nødvendigt for at reparere kataloget — nye snapshots opdaterer det selv. På et stort katalog tager det flere minutter, og snapshots i kø venter, til det er færdigt.",
+    "catalogRebuildQueued": "Genskrivning af kataloget er sat i kø",
+    "catalogRebuildInProgress": "En genskrivning af kataloget venter allerede eller er i gang.",
+    "catalogRebuildStatus": "Genskrivning af katalog: {{status}}",
+    "catalogRebuildDocuments": "{{count}} dokumenter skrevet, færdig {{date}}"
   },
   "realtime": {
     "failedToggleEvents": "Kunne ikke slå events til/fra",

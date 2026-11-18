@@ -466,7 +466,14 @@
     "copyFormatUrl": "Copy {{format}} URL",
     "urlCopied": "URL copied",
     "snapshotId": "Snapshot id",
-    "colColumn": "Column"
+    "colColumn": "Column",
+    "rebuildCatalog": "Rebuild catalog",
+    "catalogRebuildConfirmTitle": "Rewrite the whole snapshot catalog?",
+    "catalogRebuildConfirm": "Every STAC document of this database's snapshots is written again. This is only needed to repair the catalog — new snapshots update it by themselves. On a large catalog it takes several minutes, and queued snapshots wait until it is done.",
+    "catalogRebuildQueued": "Catalog rebuild queued",
+    "catalogRebuildInProgress": "A catalog rebuild is already pending or running.",
+    "catalogRebuildStatus": "Catalog rebuild: {{status}}",
+    "catalogRebuildDocuments": "{{count}} documents written, finished {{date}}"
   },
   "realtime": {
     "failedToggleEvents": "Failed to toggle events",
