@@ -24,7 +24,11 @@ export function getAdminClient(): CentiaAdminClient {
 /** Extract a user-friendly error message from SDK or generic errors. */
 /** The v4 API's machine-readable errorCode ('SNAPSHOT_IN_PROGRESS', 'JOB_RUNNING', ...), or null. */
 export function getApiErrorCode(error: unknown): string | null {
-  return isCentiaApiError(error) ? ((error as { errorCode?: string }).errorCode ?? null) : null;
+  if (!isCentiaApiError(error)) return null;
+  // The body carries it as errorCode next to a numeric code; error.details is the parsed body.
+  const fromBody = (error.details as { errorCode?: unknown } | null)?.errorCode;
+  if (typeof fromBody === 'string') return fromBody;
+  return typeof error.code === 'string' ? error.code : null;
 }
 
 export function getErrorMessage(error: unknown): string {

@@ -13,7 +13,7 @@ import type {
   RelationSnapshot, SnapshotCatalogRebuild, SnapshotFormat, SnapshotFormatResult, SnapshotJob, SnapshotStatus,
 } from '@mapcentia/gc2-sdk';
 import { message } from '../../utils/message';
-import { getAdminClient, getErrorMessage } from '../../baas/adminClient';
+import { getAdminClient, getApiErrorCode, getErrorMessage } from '../../baas/adminClient';
 import { getStatus } from '../../baas/client';
 import { useAuth } from '../../auth/AuthProvider';
 import { queryClient } from '../../data/queryClient';
@@ -77,7 +77,7 @@ function humanBytes(n: number): string {
 }
 
 function apiErrorCode(e: unknown): string | null {
-  return isCentiaApiError(e) ? ((e as { errorCode?: string }).errorCode ?? null) : null;
+  return getApiErrorCode(e);
 }
 
 /** Save a fetched snapshot file to disk via a blob URL (Authorization cannot ride on <a href>). */
