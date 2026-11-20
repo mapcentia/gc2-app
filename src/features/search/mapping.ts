@@ -1,3 +1,14 @@
+import type { SearchResult } from '@mapcentia/gc2-sdk';
+
+/** One table row per hit: _id and _score, then the document's attribute columns. */
+export function hitsToRows(result: SearchResult): Record<string, unknown>[] {
+  return result.hits.hits.map((hit) => ({
+    _id: hit._id,
+    _score: hit._score,
+    ...(hit._source?.properties ?? {}),
+  }));
+}
+
 /** One column's OpenSearch mapping override, as stored in the relation's Meta `elasticsearch` block. */
 export type ColumnOverride = Record<string, unknown>;
 /** The relation's whole `elasticsearch` block, keyed by column name. */

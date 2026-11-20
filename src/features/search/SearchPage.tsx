@@ -7,7 +7,7 @@ import { BuildOutlined, DeleteOutlined, ProfileOutlined, SearchOutlined, Setting
 import { Search } from '@mapcentia/gc2-sdk';
 import type { SearchResult } from '@mapcentia/gc2-sdk';
 import { message } from '../../utils/message';
-import { getAdminClient, getApiErrorCode, getErrorMessage } from '../../baas/adminClient';
+import { getAdminClient, getErrorMessage } from '../../baas/adminClient';
 import { useAuth } from '../../auth/AuthProvider';
 import { confirmDelete } from '../../components/ConfirmDelete';
 import { formatNumber } from '../../i18n';
@@ -15,6 +15,8 @@ import CodeEditor from '../../components/CodeEditor';
 import ResultTable from '../../components/ResultTable';
 import SchemaTableSelect from '../../components/SchemaTableSelect';
 import MappingDrawer from './MappingDrawer';
+import { hitsToRows } from './mapping';
+import SearchError, { isFinalFailure, toSearchFailure, type SearchFailure } from './SearchError';
 
 const { Text, Paragraph } = Typography;
 
@@ -38,15 +40,6 @@ function parseObject(text: string): { value?: Record<string, unknown>; error?: s
   }
 }
 
-/** One table row per hit: _id and _score, then the document's attribute columns. */
-function toRows(result: SearchResult): Record<string, unknown>[] {
-  return result.hits.hits.map((hit) => ({
-    _id: hit._id,
-    _score: hit._score,
-    ...(hit._source?.properties ?? {}),
-  }));
-}
-
 export default function SearchPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -63,7 +56,7 @@ export default function SearchPage() {
 
   const [searching, setSearching] = useState(false);
   const [result, setResult] = useState<SearchResult | null>(null);
-  const [searchError, setSearchError] = useState<{ code?: string; message: string } | null>(null);
+  const [searchError, setSearchError] = useState<SearchFailure | null>(null);
 
   const [building, setBuilding] = useState(false);
   const [mappingOpen, setMappingOpen] = useState(false);
@@ -98,7 +91,7 @@ export default function SearchPage() {
       setResult(res);
     } catch (e: unknown) {
       setResult(null);
-      setSearchError({ code: getApiErrorCode(e) ?? undefined, message: getErrorMessage(e) });
+      setSearchError(toSearchFailure(e));
     } finally {
       setSearching(false);
     }
@@ -107,8 +100,9 @@ export default function SearchPage() {
   const runRef = useRef(runSearch);
   runRef.current = runSearch;
 
-  const handleBuild = async () => {
-    if (!schema || !table) return;
+  /** Resolves to whether the index was built. */
+  const handleBuild = async (): Promise<boolean> => {
+    if (!schema || !table) return false;
     setBuilding(true);
     try {
       const built = await searchClient().buildSearchIndex(schema, table);
@@ -118,8 +112,10 @@ export default function SearchPage() {
         message.success(built.message || t('search.built'));
       }
       reset();
+      return true;
     } catch (e: unknown) {
       message.error(getErrorMessage(e));
+      return false;
     } finally {
       setBuilding(false);
     }
@@ -260,7 +256,7 @@ export default function SearchPage() {
             icon={<SearchOutlined />}
             onClick={runSearch}
             loading={searching}
-            disabled={!hasRelation || (mode === 'dsl' && !!dslError)}
+            disabled={!hasRelation || (mode === 'dsl' && !!dslError) || isFinalFailure(searchError)}
           >
             {t('common.search')}
           </Button>
@@ -270,16 +266,12 @@ export default function SearchPage() {
       {!hasRelation && <Alert type="info" showIcon message={t('search.chooseRelation')} />}
 
       {searchError && (
-        searchError.code === 'INDEX_NOT_FOUND' ? (
-          <Alert
-            type="info"
-            showIcon
-            message={t('search.noIndex')}
-            description={isOwner ? t('search.noIndexOwnerHint') : t('search.noIndexHint')}
-          />
-        ) : (
-          <Alert type="error" showIcon message={searchError.message} />
-        )
+        <SearchError
+          failure={searchError}
+          isOwner={isOwner}
+          building={building}
+          onBuild={async () => { if (await handleBuild()) runRef.current(); }}
+        />
       )}
 
       {result && (
@@ -289,7 +281,7 @@ export default function SearchPage() {
             {result.hits.total?.relation === 'gte' && <Text type="secondary"> {t('search.orMore')}</Text>}
             <Text type="secondary"> · {t('search.took', { ms: formatNumber(result.took ?? 0) })}</Text>
           </Paragraph>
-          <ResultTable data={toRows(result)} />
+          <ResultTable data={hitsToRows(result)} />
           {result.aggregations && (
             <>
               <h4>{t('search.aggregations')}</h4>

@@ -4,15 +4,19 @@ import { Alert, Button, Drawer, Form, Input, Popconfirm, Select, Space, Spin, Ta
 import { UndoOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { Search } from '@mapcentia/gc2-sdk';
+import type { SearchResult } from '@mapcentia/gc2-sdk';
+import { formatNumber } from '../../i18n';
+import ResultTable from '../../components/ResultTable';
+import SearchError, { isFinalFailure, toSearchFailure, type SearchFailure } from './SearchError';
 import { message } from '../../utils/message';
 import { getAdminClient, getErrorMessage } from '../../baas/adminClient';
 import { queryClient } from '../../data/queryClient';
 import {
-  BUILTIN_ANALYZERS, MAPPING_TYPES, buildOverrides, inferType, isLegacyIndex, isLegacyType, readOverrides,
+  BUILTIN_ANALYZERS, MAPPING_TYPES, buildOverrides, hitsToRows, inferType, isLegacyIndex, isLegacyType, readOverrides,
   type Overrides,
 } from './mapping';
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 
 interface Props {
   schema: string;
@@ -51,6 +55,10 @@ export default function MappingDrawer({ schema, table, open, onClose, onRebuilt 
   const [fieldsErrors, setFieldsErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<'save' | 'rebuild' | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [testQuery, setTestQuery] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<SearchResult | null>(null);
+  const [testFailure, setTestFailure] = useState<SearchFailure | null>(null);
 
   const meta = useQuery({
     queryKey: ['search-mapping', rel],
@@ -77,7 +85,10 @@ export default function MappingDrawer({ schema, table, open, onClose, onRebuilt 
   }, [open, meta.data]);
 
   useEffect(() => {
-    if (open) setOutcome(null);
+    if (!open) return;
+    setOutcome(null);
+    setTestResult(null);
+    setTestFailure(null);
   }, [open, rel]);
 
   const rows: Row[] = useMemo(() => {
@@ -155,11 +166,28 @@ export default function MappingDrawer({ schema, table, open, onClose, onRebuilt 
       setOutcome(res.errors
         ? { type: 'warning', message: res.message || t('search.mapBuiltWithErrors'), errorsIn: res.errors_in ?? [] }
         : { type: 'success', message: res.message || t('search.built') });
+      // What the test search showed came from the index that was just replaced.
+      setTestResult(null);
+      setTestFailure(null);
       onRebuilt();
     } catch (e: unknown) {
       setOutcome({ type: 'error', message: getErrorMessage(e) });
     } finally {
       setBusy(null);
+    }
+  };
+
+  const runTest = async () => {
+    setTesting(true);
+    setTestFailure(null);
+    try {
+      const q = testQuery.trim();
+      setTestResult(await new Search(getAdminClient().http).search(schema, table, q ? { q, size: 5 } : { size: 5 }));
+    } catch (e: unknown) {
+      setTestResult(null);
+      setTestFailure(toSearchFailure(e));
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -359,6 +387,35 @@ export default function MappingDrawer({ schema, table, open, onClose, onRebuilt 
             pagination={false}
             expandable={{ expandedRowRender: advanced }}
           />
+
+          <h4 style={{ marginTop: 24 }}>{t('search.testTitle')}</h4>
+          <Paragraph type="secondary">{t('search.testNote')}</Paragraph>
+          <Input.Search
+            value={testQuery}
+            onChange={(e) => setTestQuery(e.target.value)}
+            onSearch={runTest}
+            loading={testing}
+            disabled={isFinalFailure(testFailure)}
+            placeholder={t('search.testPlaceholder')}
+            enterButton
+            style={{ maxWidth: 520, marginBottom: 12 }}
+          />
+          {testFailure && (
+            <SearchError failure={testFailure} isOwner onBuild={() => save(true)} building={busy === 'rebuild'} />
+          )}
+          {testResult && (
+            <>
+              <Paragraph>
+                <Text strong>
+                  {t('search.hits', {
+                    shown: formatNumber(testResult.hits.hits.length),
+                    total: formatNumber(testResult.hits.total?.value ?? 0),
+                  })}
+                </Text>
+              </Paragraph>
+              <ResultTable data={hitsToRows(testResult)} />
+            </>
+          )}
         </>
       )}
     </Drawer>
