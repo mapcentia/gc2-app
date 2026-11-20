@@ -29,6 +29,7 @@ const ConfigurationsPage = lazy(() => import('./features/configurations/Configur
 const SnapshotsPage = lazy(() => import('./features/snapshots/SnapshotsPage'));
 const SchedulerPage = lazy(() => import('./features/scheduler/SchedulerPage'));
 const TileSeederPage = lazy(() => import('./features/tileseeder/TileSeederPage'));
+const SearchPage = lazy(() => import('./features/search/SearchPage'));
 
 const ProtectedRoute = lazy(() => import('./auth/ProtectedRoute'));
 
@@ -62,6 +63,7 @@ export const routes: RouteObject[] = [
       { path: 'ogc', element: <OgcServicesPage /> },
       { path: 'tilecache', element: <TileCachePage /> },
       { path: 'keyvalue', element: <KeyValuePage /> },
+      { path: 'search', element: <SearchPage /> },
       { path: 'users', element: <UserListPage /> },
       { path: 'clients', element: <ClientListPage /> },
       { path: 'rules', element: <RuleListPage /> },

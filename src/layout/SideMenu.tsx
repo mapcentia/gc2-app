@@ -22,6 +22,7 @@ import {
   AppstoreOutlined,
   TagsOutlined,
   ControlOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
@@ -44,6 +45,7 @@ const items = [
     { key: '/graphql', icon: <ApiOutlined />, label: 'GraphQL Explorer' },
     { key: '/realtime', icon: <ThunderboltOutlined />, label: 'Realtime' },
     { key: '/keyvalue', icon: <TagsOutlined />, label: 'Key/Value' },
+    { key: '/search', icon: <SearchOutlined />, label: 'Search' },
     { key: '/ogc', icon: <GlobalOutlined />, label: 'OGC Services' },
     { key: '/tilecache', icon: <AppstoreOutlined />, label: 'Tile Cache' },
   ]},
